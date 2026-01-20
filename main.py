@@ -3,19 +3,29 @@ import time
 import cv2
 from pose_camera import PoseCamera
 from posture_estimation import get_all_angles
-from posture_definitions import right_arm_stretched, left_arm_stretched
+from posture_definitions import (
+    right_arm_stretched,
+    left_arm_stretched,
+    right_arm_bent_90,
+    left_arm_bent_90
+)
 
-RIGHT_ARM = 0
-LEFT_ARM = 1
+POSTURES = [
+    ("BRAÇ DRET ESTIRAT", right_arm_stretched),
+    ("BRAÇ ESQUERRE ESTIRAT", left_arm_stretched),
+    ("BRAÇ DRET DOBLAT 90°", right_arm_bent_90),
+    ("BRAÇ ESQUERRE DOBLAT 90°", left_arm_bent_90),
+]
 
 def main():
     pose_cam = PoseCamera("pose_landmarker.task")
 
-    state = RIGHT_ARM
+    state = 0
     posture_start_time = None
+    last_second = None
 
-    print("Presiona Ctrl+C para salir")
-    print("Estado inicial: BRAZO DERECHO")
+    print("Presiona Ctrl+C per a eixir")
+    print(f"Postura actual: {POSTURES[state][0]}")
 
     try:
         while True:
@@ -27,46 +37,38 @@ def main():
                 landmarks = result.pose_landmarks[0]
                 angles = get_all_angles(landmarks, frame.shape)
 
-                current_time = time.time()
+                posture_name, posture_fn = POSTURES[state]
 
-                # =========================
-                # ESTADO BRAZO DERECHO
-                # =========================
-                if state == RIGHT_ARM:
-                    if right_arm_stretched(angles):
-                        if posture_start_time is None:
-                            posture_start_time = current_time
-                            print("Brazo derecho correcto, empezando contador...")
+                if posture_fn(angles):
+                    now = time.time()
 
-                        elapsed = current_time - posture_start_time
-                        print(f"Brazo derecho correcto: {elapsed:.1f}s")
+                    if posture_start_time is None:
+                        posture_start_time = now
+                        last_second = 10
+                        print(f"\n{posture_name}")
+                        print("Mantín la postura")
 
-                        if elapsed >= 10:
-                            print("\n>>> BRAZO DERECHO COMPLETADO <<<")
-                            print("Cambia a BRAZO IZQUIERDO\n")
-                            state = LEFT_ARM
-                            posture_start_time = None
-                    else:
+                    elapsed = int(now - posture_start_time)
+                    remaining = 10 - elapsed
+
+                    if remaining != last_second and remaining >= 0:
+                        print(f"{remaining}...")
+                        last_second = remaining
+
+                    if remaining <= 0:
+                        print(f"\n>>> {posture_name} COMPLETADA <<<\n")
+                        state += 1
                         posture_start_time = None
 
-                # =========================
-                # ESTADO BRAZO IZQUIERDO
-                # =========================
-                elif state == LEFT_ARM:
-                    if left_arm_stretched(angles):
-                        if posture_start_time is None:
-                            posture_start_time = current_time
-                            print("Brazo izquierdo correcto, empezando contador...")
-
-                        elapsed = current_time - posture_start_time
-                        print(f"Brazo izquierdo correcto: {elapsed:.1f}s")
-
-                        if elapsed >= 10:
-                            print("\n>>> BRAZO IZQUIERDO COMPLETADO <<<")
-                            print("EJERCICIO FINALIZADO")
+                        if state >= len(POSTURES):
+                            print("🎉 EXERCICI FINALITZAT 🎉")
                             break
-                    else:
-                        posture_start_time = None
+
+                        print(f"Postura següent: {POSTURES[state][0]}")
+
+                else:
+                    posture_start_time = None
+                    last_second = None
 
             cv2.imshow("Pose estimation", frame)
 
@@ -74,7 +76,7 @@ def main():
                 break
 
     except KeyboardInterrupt:
-        print("Saliendo...")
+        print("Eixint...")
 
     finally:
         pose_cam.release()

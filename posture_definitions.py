@@ -1,15 +1,28 @@
 # posture_definitions.py
 
-def right_arm_stretched(angles, tol_shoulder=15, tol_elbow=15):
+def right_arm_stretched(angles, tol=15):
     return (
-        abs(angles["right_shoulder"] - 90) <= tol_shoulder and
-        abs(angles["right_elbow"] - 180) <= tol_elbow
+        abs(angles["right_shoulder"] - 90) <= tol and
+        abs(angles["right_elbow"] - 180) <= tol
     )
 
 
-def left_arm_stretched(angles, tol_shoulder=15, tol_elbow=15):
+def left_arm_stretched(angles, tol=15):
     return (
-        abs(angles["left_shoulder"] - 90) <= tol_shoulder and
-        abs(angles["left_elbow"] - 180) <= tol_elbow
+        abs(angles["left_shoulder"] - 90) <= tol and
+        abs(angles["left_elbow"] - 180) <= tol
     )
 
+
+def right_arm_bent_90(angles, tol=15):
+    return (
+        abs(angles["right_shoulder"] - 90) <= tol and
+        abs(angles["right_elbow"] - 90) <= tol
+    )
+
+
+def left_arm_bent_90(angles, tol=15):
+    return (
+        abs(angles["left_shoulder"] - 90) <= tol and
+        abs(angles["left_elbow"] - 90) <= tol
+    )
