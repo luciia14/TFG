@@ -1,16 +1,15 @@
 # posture_definitions.py
 
-def right_arm_90deg_correct(angles,
-                            shoulder_target=90,
-                            elbow_target=180,
-                            shoulder_tol=15,
-                            elbow_tol=15):
-    
+def right_arm_stretched(angles, tol_shoulder=15, tol_elbow=15):
+    return (
+        abs(angles["right_shoulder"] - 90) <= tol_shoulder and
+        abs(angles["right_elbow"] - 180) <= tol_elbow
+    )
 
-    shoulder = angles["right_shoulder"]
-    elbow = angles["right_elbow"]
 
-    shoulder_ok = abs(shoulder - shoulder_target) <= shoulder_tol
-    elbow_ok = abs(elbow - elbow_target) <= elbow_tol
+def left_arm_stretched(angles, tol_shoulder=15, tol_elbow=15):
+    return (
+        abs(angles["left_shoulder"] - 90) <= tol_shoulder and
+        abs(angles["left_elbow"] - 180) <= tol_elbow
+    )
 
-    return shoulder_ok and elbow_ok
