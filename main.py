@@ -9,13 +9,14 @@ from posture_definitions import (
     right_arm_bent_90,
     left_arm_bent_90
 )
+from posture_feedback import generate_feedback  # tu función de feedback
 
-HOLD_TIME = 5  # segundos
+HOLD_TIME = 5  # segundos para mantener la postura
 
 def main():
     pose_cam = PoseCamera("pose_landmarker.task")
 
-    state = 0  # 0 = estirados, 1 = doblados
+    state = 0  # 0 = brazos estirados, 1 = brazos a 90°
     hold_start = None
 
     print("Presiona Ctrl+C para salir")
@@ -32,12 +33,21 @@ def main():
                 angles = get_all_angles(landmarks, frame.shape)
                 now = time.time()
 
+                # ================================
+                # Feedback de corrección
+                # ================================
+                feedbacks = generate_feedback(angles, state)
+                for fb in feedbacks:
+                    print(fb)
+
+                # ================================
+                # Lógica de postura
+                # ================================
                 if state == 0:
                     correct = (
                         right_arm_stretched(angles) and
                         left_arm_stretched(angles)
                     )
-
                 elif state == 1:
                     correct = (
                         right_arm_bent_90(angles) and
@@ -64,8 +74,9 @@ def main():
                 else:
                     hold_start = None
 
+            # Mostrar vídeo (sin ángulos ni texto en imagen)
             cv2.imshow("Pose estimation", frame)
-            if cv2.waitKey(1) & 0xFF == 27:
+            if cv2.waitKey(1) & 0xFF == 27:  # ESC para cerrar
                 break
 
     except KeyboardInterrupt:
