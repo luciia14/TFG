@@ -10,22 +10,16 @@ from posture_definitions import (
     left_arm_bent_90
 )
 
-POSTURES = [
-    ("BRAÇ DRET ESTIRAT", right_arm_stretched),
-    ("BRAÇ ESQUERRE ESTIRAT", left_arm_stretched),
-    ("BRAÇ DRET DOBLAT 90°", right_arm_bent_90),
-    ("BRAÇ ESQUERRE DOBLAT 90°", left_arm_bent_90),
-]
+HOLD_TIME = 5  # segundos
 
 def main():
     pose_cam = PoseCamera("pose_landmarker.task")
 
-    state = 0
-    posture_start_time = None
-    last_second = None
+    state = 0  # 0 = estirados, 1 = doblados
+    hold_start = None
 
-    print("Presiona Ctrl+C per a eixir")
-    print(f"Postura actual: {POSTURES[state][0]}")
+    print("Presiona Ctrl+C para salir")
+    print("FASE 1 → ESTIRA LOS DOS BRAZOS")
 
     try:
         while True:
@@ -36,51 +30,49 @@ def main():
             if result.pose_landmarks:
                 landmarks = result.pose_landmarks[0]
                 angles = get_all_angles(landmarks, frame.shape)
+                now = time.time()
 
-                posture_name, posture_fn = POSTURES[state]
+                if state == 0:
+                    correct = (
+                        right_arm_stretched(angles) and
+                        left_arm_stretched(angles)
+                    )
 
-                if posture_fn(angles):
-                    now = time.time()
+                elif state == 1:
+                    correct = (
+                        right_arm_bent_90(angles) and
+                        left_arm_bent_90(angles)
+                    )
 
-                    if posture_start_time is None:
-                        posture_start_time = now
-                        last_second = 10
-                        print(f"\n{posture_name}")
-                        print("Mantín la postura")
+                if correct:
+                    if hold_start is None:
+                        hold_start = now
 
-                    elapsed = int(now - posture_start_time)
-                    remaining = 10 - elapsed
+                    remaining = HOLD_TIME - int(now - hold_start)
+                    print(f"Mantén la postura ({remaining}s)")
 
-                    if remaining != last_second and remaining >= 0:
-                        print(f"{remaining}...")
-                        last_second = remaining
-
-                    if remaining <= 0:
-                        print(f"\n>>> {posture_name} COMPLETADA <<<\n")
-                        state += 1
-                        posture_start_time = None
-
-                        if state >= len(POSTURES):
-                            print("🎉 EXERCICI FINALITZAT 🎉")
+                    if now - hold_start >= HOLD_TIME:
+                        if state == 0:
+                            state = 1
+                            print("\n✔ FASE 1 COMPLETADA")
+                            print("FASE 2 → DOBLA LOS DOS BRAZOS A 90°\n")
+                        else:
+                            print("\n🎉 POSICIÓN COMPLETA REALIZADA 🎉")
                             break
 
-                        print(f"Postura següent: {POSTURES[state][0]}")
-
+                        hold_start = None
                 else:
-                    posture_start_time = None
-                    last_second = None
+                    hold_start = None
 
             cv2.imshow("Pose estimation", frame)
-
             if cv2.waitKey(1) & 0xFF == 27:
                 break
 
     except KeyboardInterrupt:
-        print("Eixint...")
+        print("Saliendo...")
 
     finally:
         pose_cam.release()
-
 
 if __name__ == "__main__":
     main()
