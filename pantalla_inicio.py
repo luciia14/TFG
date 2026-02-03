@@ -2,6 +2,8 @@
 import tkinter as tk
 from tkinter import Label
 from styles import COLOR_TITULO, COLOR_BOTON, COLOR_BOTON_SEC
+from packs import exercise_packs
+
 
 class PantallaInicio:
     def __init__(self, root, fuentes, on_pack_seleccionado):
@@ -22,11 +24,11 @@ class PantallaInicio:
         )
         self.label_msg.place(x=50, y=50)
 
-        # Botones de packs
-        for i, texto in enumerate(["Pack 1", "Pack 2"]):
+        # Crear botones dinámicamente según los packs existentes
+        for i, pack_name in enumerate(list(exercise_packs.keys())):
             lbl = tk.Label(
                 root,
-                text=texto,
+                text=pack_name,
                 font=fuentes["boton"],
                 fg="#FFFFFF",
                 bg=COLOR_BOTON_SEC,
@@ -34,16 +36,25 @@ class PantallaInicio:
                 pady=15,
                 cursor="hand2"
             )
+
             lbl.place(x=350, y=200 + i * 100)
+
+            # Efectos hover
             lbl.bind("<Enter>", lambda e, l=lbl: l.config(bg=COLOR_BOTON))
             lbl.bind("<Leave>", lambda e, l=lbl: l.config(bg=COLOR_BOTON_SEC))
-            lbl.bind("<Button-1>", lambda e, p=i + 1: self.on_pack_seleccionado(p))
+
+            # Click → devuelve el NOMBRE del pack ("Pack 1", "Pack 2", ...)
+            lbl.bind(
+                "<Button-1>",
+                lambda e, p=pack_name: self.on_pack_seleccionado(p)
+            )
+
             self.pack_buttons.append(lbl)
 
     def mostrar(self):
         self.label_msg.place(x=50, y=50)
         for i, btn in enumerate(self.pack_buttons):
-            btn.place(x=350, y=200 + i*100)
+            btn.place(x=350, y=200 + i * 100)
 
     def ocultar(self):
         self.label_msg.place_forget()
