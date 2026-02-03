@@ -5,30 +5,42 @@ from pose_camera import PoseCamera
 from posture_estimation import get_all_angles
 from posture_feedback import generate_feedback
 from packs import exercise_packs
+from app_gui import AppGUI
 
 HOLD_TIME = 5  # segundos
 
-def seleccionar_pack():
-    print("Selecciona un pack de ejercicios:")
-    for i, pack_name in enumerate(exercise_packs.keys(), 1):
-        print(f"{i}. {pack_name}")
-    while True:
-        opcion = input("Introduce el número del pack: ")
-        if opcion in ["1", "2"]:
-            pack_name = list(exercise_packs.keys())[int(opcion)-1]
-            return exercise_packs[pack_name], pack_name
-        else:
-            print("Opción no válida, inténtalo de nuevo.")
+# Variable global para almacenar el pack seleccionado desde la GUI
+pack_seleccionado = None
+pack_name_seleccionado = None
+
+def obtener_pack_desde_gui():
+    """Lanza la GUI y devuelve el pack seleccionado"""
+    global pack_seleccionado, pack_name_seleccionado
+
+    def on_pack_seleccionado(pack_name):
+        global pack_seleccionado, pack_name_seleccionado
+        pack_seleccionado = exercise_packs[pack_name]
+        pack_name_seleccionado = pack_name
+        app.root.quit()  # Cierra el loop de mainloop para continuar en main
+
+    app = AppGUI()
+    # Reemplazamos la función de selección de pack
+    app.inicio.on_pack_seleccionado = on_pack_seleccionado
+    app.run()  # Muestra la GUI hasta que el usuario selecciona un pack
 
 def main():
-    # Selección del pack
-    pack, pack_name = seleccionar_pack()
-    print(f"\nHas seleccionado {pack_name}\n")
+    # Obtener pack desde la GUI
+    obtener_pack_desde_gui()
+    if pack_seleccionado is None:
+        print("No se seleccionó ningún pack. Saliendo...")
+        return
+
+    print(f"\nHas seleccionado {pack_name_seleccionado}\n")
 
     pose_cam = PoseCamera("pose_landmarker.task")
 
     try:
-        for idx, ejercicio in enumerate(pack, 1):
+        for idx, ejercicio in enumerate(pack_seleccionado, 1):
             print(f"EMPEZANDO EJERCICIO {idx} → {ejercicio['nombre']}")
             hold_start = None
             last_feedback_time = 0
@@ -83,7 +95,9 @@ def main():
 
     finally:
         pose_cam.release()
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
     main()
+
