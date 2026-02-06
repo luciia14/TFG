@@ -1,12 +1,11 @@
-# app_gui.py
 import tkinter as tk
 from styles import cargar_fuentes
-from packs import exercise_packs  # importem els packs
+from packs import exercise_packs  # importamos los packs
 from pantalla_inicio import PantallaInicio
 from pantalla_entrenamiento import PantallaEntrenamiento
 from pantalla_final import PantallaFinal
 
-# Temps fixe per cada exercici
+# Tiempo fijo por defecto
 TIEMPO_EJERCICIO = 5
 
 class AppGUI:
@@ -18,9 +17,10 @@ class AppGUI:
 
         self.fuentes = cargar_fuentes(self.root)
 
-        # Variables
+        # Variables de control para el MAIN
         self.selected_pack = None
         self.ejercicio_actual = 0
+        self.confirmado = False  # Bandera clave para disparar la cámara
 
         # Pantallas
         self.inicio = PantallaInicio(self.root, self.fuentes, self.seleccion_pack)
@@ -29,9 +29,44 @@ class AppGUI:
 
         self.inicio.mostrar()
 
-    # Callbacks
+    # --- Métodos de sincronización con MAIN ---
+
+    def confirmar_seleccion(self):
+        """Activa la bandera para que el hilo del main inicie la cámara"""
+        self.confirmado = True
+        if hasattr(self, 'ventana_confirmacion'):
+            self.ventana_confirmacion.destroy()
+
+    def actualizar_interfaz_ejercicio(self, idx, nombre, total_ejercicios):
+        """Prepara la pantalla de entrenamiento para un nuevo ejercicio"""
+        self.ejercicio_actual = idx
+        self.inicio.ocultar()
+        self.final.ocultar()
+        
+        self.entrenamiento.mostrar_ejercicio(
+            nombre,
+            segundos=TIEMPO_EJERCICIO,
+            actual=idx + 1,
+            total=total_ejercicios
+        )
+
+    def actualizar_datos_tiempo_real(self, segundos, feedback_texto):
+        """Actualiza el contador y los mensajes recibidos desde el hilo de la cámara"""
+        self.entrenamiento.actualizar_contador(segundos)
+        self.entrenamiento.actualizar_feedback(feedback_texto)
+
+    def finalizar_entrenamiento_gui(self):
+        """Muestra la pantalla final y limpia estados"""
+        self.entrenando = False
+        self.entrenamiento.ocultar()
+        self.final.mostrar()
+
+    # --- Callbacks y navegación ---
+
     def seleccion_pack(self, pack_name):
+        """Se ejecuta al elegir un pack en la pantalla de inicio"""
         self.selected_pack = pack_name
+        self.confirmado = False # Aseguramos que no empiece antes de confirmar
         self.mostrar_confirmacion(pack_name)
 
     def mostrar_confirmacion(self, pack_name):
@@ -55,47 +90,25 @@ class AppGUI:
         btn_frame = tk.Frame(ventana, bg="#0D1B2A")
         btn_frame.pack(pady=20)
 
+        # Botón Aceptar: Llama a confirmar_seleccion para avisar al Main
         Button(btn_frame, text="Aceptar", font=self.fuentes["boton"], fg="#FFFFFF", bg="#42A5F5",
-               width=12, pady=10, command=lambda: [ventana.destroy(), self.iniciar_simulacion(0)]).pack(side="left", padx=20)
+               width=12, pady=10, command=self.confirmar_seleccion).pack(side="left", padx=20)
+        
         Button(btn_frame, text="Cancelar", font=self.fuentes["boton"], fg="#FFFFFF", bg="#1B3B5F",
-               width=12, pady=10, command=ventana.destroy).pack(side="left", padx=20)
+               width=12, pady=10, command=self.cancelar_seleccion).pack(side="left", padx=20)
+        
+        self.ventana_confirmacion = ventana
 
-    def iniciar_simulacion(self, idx):
-        self.ejercicio_actual = idx
-        self.inicio.ocultar()
-        self.final.ocultar()
-        self.mostrar_ejercicio()
-
-    def mostrar_ejercicio(self):
-        ejercicio = exercise_packs[self.selected_pack][self.ejercicio_actual]
-        nombre = ejercicio["nombre"]
-
-        self.entrenamiento.mostrar_ejercicio(
-            nombre,
-            segundos=TIEMPO_EJERCICIO,
-            actual=self.ejercicio_actual + 1,
-            total=len(exercise_packs[self.selected_pack])
-        )
-        self.root.after(1000, self.contador, TIEMPO_EJERCICIO - 1)
-
-    def contador(self, segundos):
-        if segundos >= 0:
-            self.entrenamiento.actualizar_contador(segundos)
-            self.root.after(1000, self.contador, segundos - 1)
-        else:
-            self.ejercicio_actual += 1
-            if self.ejercicio_actual < len(exercise_packs[self.selected_pack]):
-                self.mostrar_ejercicio()
-            else:
-                self.mostrar_final()
-
-    def mostrar_final(self):
-        self.entrenamiento.ocultar()
-        self.final.mostrar()
+    def cancelar_seleccion(self):
+        self.selected_pack = None
+        self.confirmado = False
+        self.ventana_confirmacion.destroy()
 
     def reiniciar_entrenamiento(self):
+        """Resetea todo para poder elegir otro pack"""
         self.final.ocultar()
         self.selected_pack = None
+        self.confirmado = False
         self.ejercicio_actual = 0
         self.inicio.mostrar()
 
@@ -105,8 +118,6 @@ class AppGUI:
     def run(self):
         self.root.mainloop()
 
-
 if __name__ == "__main__":
     app = AppGUI()
     app.run()
-
