@@ -7,44 +7,53 @@ class PantallaEntrenamiento:
         self.root = root
         self.fuentes = fuentes
         
-        # Inicializamos variables de estado para evitar AttributeError
         self.actual = 0
         self.total = 0
 
+        # Fuentes personalizadas para que sean mucho más grandes
+        # Si prefieres usar las de styles.py, cámbialas aquí, pero para legibilidad recomiendo:
+        self.fuente_gigante = ("Helvetica", 28, "bold") 
+
         self.contador_label = Label(root, text="", font=fuentes["contador"], fg=COLOR_CONTADOR, bg="#0D1B2A")
         self.nombre_label = Label(root, text="", font=fuentes["boton"], fg=COLOR_BOTON, bg="#0D1B2A")
-        self.feedback_label = Label(root, text="", font=fuentes["feedback"], fg=COLOR_TEXTO, bg="#0D1B2A", justify="left", wraplength=900)
+        
+        # Configuramos el feedback_label para párrafos centrados y letra grande
+        self.feedback_label = Label(
+            root, 
+            text="", 
+            font=self.fuente_gigante, 
+            fg="#00FFCC", # Color cian brillante para alta visibilidad
+            bg="#0D1B2A", 
+            justify="center", # Centra el texto de cada párrafo
+            wraplength=900    # Permite que el texto baje si es muy largo
+        )
 
     def mostrar_ejercicio(self, nombre, feedback="", segundos=0, actual=1, total=1):
-        """Prepara y muestra la pantalla con los datos iniciales del ejercicio"""
-        # IMPORTANTE: Guardamos el estado para que actualizar_feedback pueda usarlo
+        """Prepara y muestra la pantalla con los datos iniciales"""
         self.actual = actual
         self.total = total
         
-        # Configurar y posicionar etiquetas
+        # Contador arriba a la izquierda
         self.contador_label.config(text=f"{segundos}s")
         self.contador_label.place(x=50, y=50)
 
-        self.nombre_label.config(text=nombre)
-        self.nombre_label.place(x=50, y=120)
+        # Nombre del ejercicio arriba (como subtítulo)
+        self.nombre_label.config(text=f"{nombre.upper()} ({self.actual}/{self.total})")
+        self.nombre_label.place(x=50, y=130)
 
-        # Mostrar el feedback inicial junto con el progreso
-        texto_inicial = f"{feedback}\nEjercicio {self.actual}/{self.total}"
-        self.feedback_label.config(text=texto_inicial)
-        self.feedback_label.place(x=50, y=200)
+        # Feedback centrado en pantalla
+        self.feedback_label.config(text=feedback.upper())
+        self.feedback_label.place(relx=0.5, rely=0.55, anchor="center")
 
     def actualizar_contador(self, segundos):
-        """Actualiza solo el número de segundos en pantalla"""
         self.contador_label.config(text=f"{segundos}s")
 
     def actualizar_feedback(self, texto_nuevo):
-        """Actualiza el mensaje de corrección manteniendo el contador de ejercicio"""
-        # Ahora self.actual y self.total siempre están definidos
-        texto_completo = f"{texto_nuevo}\nEjercicio {self.actual}/{self.total}"
-        self.feedback_label.config(text=texto_completo)
+        """Actualiza el mensaje. El MAIN ya envía los saltos de línea con \\n"""
+        # Solo mostramos el texto de corrección para maximizar el tamaño
+        self.feedback_label.config(text=texto_nuevo.upper())
 
     def ocultar(self):
-        """Esconde todos los elementos de esta pantalla"""
         self.contador_label.place_forget()
         self.nombre_label.place_forget()
         self.feedback_label.place_forget()
