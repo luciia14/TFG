@@ -12,23 +12,23 @@ def feedback_joint(angle, target_angle, joint_name, joint_type):
 
     # Feedback segons el tipus d'articulació
     if joint_type == "hombro":
-        if 5 <= diff < 15:
+        if 10 <= diff < 25:
             return f"Sube un poco más el {joint_name}"
-        elif diff >= 15:
+        elif diff >= 25:
             return f"Sube bastante el {joint_name}"
-        elif -15 < diff <= -5:
+        elif -25 < diff <= -5:
             return f"Baja un poco el {joint_name}"
-        elif diff <= -15:
+        elif diff <= -25:
             return f"Baja bastante el {joint_name}"
 
     elif joint_type == "codo":
-        if 5 <= diff < 15:
+        if 15 <= diff < 25:
             return f"Abre un poco el {joint_name}"
-        elif diff >= 15:
+        elif diff >= 25:
             return f"Abre bastante el {joint_name}"
-        elif -15 < diff <= -5:
+        elif -25 < diff <= -5:
             return f"Cierra un poco el {joint_name}"
-        elif diff <= -15:
+        elif diff <= -25:
             return f"Cierra bastante el {joint_name}"
 
 
