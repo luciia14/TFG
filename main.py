@@ -6,13 +6,14 @@ from posture_estimation import get_all_angles
 from posture_feedback import generate_feedback
 from packs import exercise_packs
 from app_gui import AppGUI
+from voice_engine import locutor  # Importamos el motor de voz diseñado
 
 # Tiempo que se debe mantener la postura correcta
 HOLD_TIME = 5
 
 def bucle_ejercicios(app):
     """
-    Controlador lógico: Maneja la cámara y envía actualizaciones estables a la GUI.
+    Controlador lógico principal con gestión de tiempos, persistencia y voz.
     """
     while True:
         # 1. Esperar a que el usuario confirme la selección en la GUI
@@ -25,25 +26,28 @@ def bucle_ejercicios(app):
         pack = exercise_packs[app.selected_pack]
         pose_cam = PoseCamera("pose_landmarker.task")
         
-        # Variables para estabilidad y permanencia de mensajes
-        mensaje_actual = "¡PREPÁRATE!"
-        last_feedback_time = 0
-        TIEMPO_PERSISTENCIA_ERROR = 2.5  # Los errores se quedan 2.5 seg para lectura clara
-        frames_correctos_seguidos = 0    # Filtro para evitar saltos rápidos al "Correcto"
-
         try:
             for idx, ejercicio in enumerate(pack):
                 # Notificar inicio de ejercicio a la interfaz
                 app.root.after(0, lambda i=idx, n=ejercicio["nombre"]: 
                                app.actualizar_interfaz_ejercicio(i, n, len(pack)))
 
+                # --- VARIABLES DE ESTADO POR EJERCICIO ---
+                inicio_ejercicio = time.time()
+                error_detectado_desde = None
+                correcto_detectado_desde = None
+                ultimo_mensaje_voz_hora = 0
+                
+                mensaje_actual = "¡PREPÁRATE!"
                 hold_start = None
                 segundos_restantes = HOLD_TIME
+                frames_correctos_seguidos = 0
 
                 while True:
                     frame, result = pose_cam.read()
                     if frame is None: continue
                     now = time.time()
+                    tiempo_transcurrido = now - inicio_ejercicio
 
                     if result.pose_landmarks:
                         landmarks = result.pose_landmarks[0]
@@ -51,61 +55,75 @@ def bucle_ejercicios(app):
                         correct = ejercicio["funcion"](angles)
 
                         if correct:
-                            # Filtro de estabilidad: necesitamos ~10 frames buenos para confirmar
-                            frames_correctos_seguidos += 1
+                            # --- LÓGICA DE POSTURA CORRECTA ---
+                            error_detectado_desde = None # Reset cronómetro error
                             
-                            if frames_correctos_seguidos > 10:
+                            if correcto_detectado_desde is None:
+                                correcto_detectado_desde = now
+                            
+                            # REGLA: 1 segundo estable para confirmar éxito
+                            if now - correcto_detectado_desde >= 1.0:
                                 if hold_start is None: 
                                     hold_start = now
                                 
                                 segundos_restantes = HOLD_TIME - int(now - hold_start)
-                                mensaje_actual = "¡POSTURA CORRECTA!\nMANTÉN LA POSICIÓN"
                                 
-                                if segundos_restantes <= 0: 
-                                    print(f"✔ Ejercicio {idx+1} completado")
-                                    break 
+                                # Si es la primera vez que detectamos éxito estable, avisamos por voz
+                                if mensaje_actual != "¡POSTURA CORRECTA!":
+                                    mensaje_actual = "¡POSTURA CORRECTA!"
+                                    locutor.decir("¡Posición correcta!", es_exito=True)
+                                
+                                if segundos_restantes <= 0: break 
                         else:
-                            # Si falla la postura, reseteamos contadores
-                            frames_correctos_seguidos = 0
+                            # --- LÓGICA DE ERROR ---
+                            correcto_detectado_desde = None # Reset cronómetro éxito
                             hold_start = None
                             segundos_restantes = HOLD_TIME
                             
-                            # Solo actualizamos el mensaje de error si ha pasado el tiempo de lectura
-                            if now - last_feedback_time >= TIEMPO_PERSISTENCIA_ERROR:
-                                errores = generate_feedback(angles, idx)
-                                if errores:
-                                    # Unimos errores con doble salto de línea para mayor claridad visual
-                                    nuevo_feedback = "\n\n".join(errores).upper()
-                                    
-                                    if nuevo_feedback != mensaje_actual:
-                                        mensaje_actual = nuevo_feedback
-                                        last_feedback_time = now
-                                        print(f"LOG ERROR:\n{mensaje_actual}")
-                                else:
-                                    mensaje_actual = "AJUSTA TU POSICIÓN"
+                            # REGLA: Silencio inicial de 2 segundos (el usuario se está colocando)
+                            if tiempo_transcurrido > 2.0:
+                                
+                                # REGLA: Persistencia (1.5s si venía de estar bien, 1.0s normal)
+                                umbral_error = 1.5 if mensaje_actual == "¡POSTURA CORRECTA!" else 1.0
+                                
+                                if error_detectado_desde is None:
+                                    error_detectado_desde = now
+                                
+                                if now - error_detectado_desde >= umbral_error:
+                                    errores = generate_feedback(angles, idx)
+                                    if errores:
+                                        # Tomamos el error (generate_feedback ya prioriza)
+                                        error_a_decir = errores[0].upper()
+                                        
+                                        # REGLA: No saturar la voz (mínimo 4s entre frases de error)
+                                        if now - ultimo_mensaje_voz_hora > 4.0:
+                                            locutor.decir(error_a_decir, es_exito=False)
+                                            ultimo_mensaje_voz_hora = now
+                                            # Actualizamos GUI con todos los errores detectados
+                                            mensaje_actual = "\n\n".join(errores).upper()
+                                    else:
+                                        mensaje_actual = "AJUSTA TU POSICIÓN"
 
-                        # Enviar datos a la GUI de forma segura entre hilos
+                        # Actualizar GUI de forma segura
                         app.root.after(0, lambda s=segundos_restantes, f=mensaje_actual: 
                                        app.actualizar_datos_tiempo_real(s, f))
 
-                    cv2.imshow("Camara de Entrenamiento", frame)
-                    if cv2.waitKey(1) & 0xFF == 27: # Salir con ESC
+                    cv2.imshow("Entrenamiento", frame)
+                    if cv2.waitKey(1) & 0xFF == 27: # ESC
                         app.root.after(0, app.salir)
                         return
 
-                # Feedback visual de fin de ejercicio
+                # --- FIN DEL EJERCICIO ---
+                locutor.decir("¡Muy bien! Siguiente ejercicio", es_exito=True)
                 app.root.after(0, lambda: app.entrenamiento.actualizar_contador("✔"))
-                time.sleep(1.5)
-                mensaje_actual = "¡BIEN HECHO!\nSIGUIENTE EJERCICIO..."
-                frames_correctos_seguidos = 0
+                time.sleep(2.0) # Pausa dramática para que el usuario descanse
 
-            # 3. Pack finalizado
+            # --- FIN DEL PACK ---
             print("\n--- Entrenamiento Finalizado ---")
             app.root.after(0, app.finalizar_entrenamiento_gui)
             pose_cam.release()
             cv2.destroyAllWindows()
             
-            # Quedarse en espera hasta que el usuario decida volver al menú o reiniciar
             while app.confirmado:
                 time.sleep(0.5)
                 if not app.root.winfo_exists(): return
@@ -119,14 +137,11 @@ def bucle_ejercicios(app):
             cv2.destroyAllWindows()
 
 def main():
-    # Instanciar la aplicación
     app = AppGUI()
-
-    # Lanzar la lógica de visión en un hilo "daemon" para que cierre con la app
+    # Lanzar la lógica de visión en un hilo separado
     hilo_logica = threading.Thread(target=bucle_ejercicios, args=(app,), daemon=True)
     hilo_logica.start()
-
-    # Iniciar el bucle principal de la GUI (Bloqueante)
+    # Ejecutar la GUI
     app.run()
 
 if __name__ == "__main__":
