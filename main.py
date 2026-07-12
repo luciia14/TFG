@@ -138,11 +138,20 @@ def bucle_ejercicios(app):
 
 def main():
     app = AppGUI()
-    # Lanzar la lógica de visión en un hilo separado
-    hilo_logica = threading.Thread(target=bucle_ejercicios, args=(app,), daemon=True)
-    hilo_logica.start()
+    
+    # Quitamos daemon=True para que Windows no cierre el hilo en silencio
+    hilo_logica = threading.Thread(target=bucle_ejercicios, args=(app,))
+    
+    # Le damos 1 segundo de ventaja a la interfaz gráfica para que se estabilice en pantalla
+    # antes de encender la cámara y el motor de voz
+    app.root.after(1000, hilo_logica.start)
+    
     # Ejecutar la GUI
     app.run()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"\n[ERROR EN MAIN]: {e}")
+        input("Presiona Enter para salir...")

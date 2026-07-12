@@ -1,6 +1,8 @@
+# app_gui.py
 import tkinter as tk
 from styles import cargar_fuentes
 from packs import exercise_packs  # importamos los packs
+from pantalla_login import PantallaLogin         # <-- Asegúrate de tener importada tu pantalla de login
 from pantalla_inicio import PantallaInicio
 from pantalla_entrenamiento import PantallaEntrenamiento
 from pantalla_final import PantallaFinal
@@ -17,19 +19,42 @@ class AppGUI:
 
         self.fuentes = cargar_fuentes(self.root)
 
+        # --- Variables de sesión del usuario ---
+        self.usuario_id = None
+        self.usuario_nombre = None
+
         # Variables de control para el MAIN
         self.selected_pack = None
         self.ejercicio_actual = 0
         self.confirmado = False  # Bandera clave para disparar la cámara
 
-        # Pantallas
+        # 1. Creamos las pantallas tal y como las tienes
         self.inicio = PantallaInicio(self.root, self.fuentes, self.seleccion_pack)
         self.entrenamiento = PantallaEntrenamiento(self.root, self.fuentes)
         self.final = PantallaFinal(self.root, self.fuentes, self.reiniciar_entrenamiento, self.salir)
+        
+        # 2. Inicializamos la Pantalla de Login pasándole el método on_login_exitoso
+        self.login = PantallaLogin(self.root, self.fuentes, self.on_login_exitoso)
 
+        # 3. ¡EL TRUCO! Ocultamos inmediatamente la de inicio que se acaba de auto-colocar
+        self.inicio.ocultar()
+
+        # 4. Mostramos el login para que sea lo único que se vea al arrancar
+        self.login.mostrar()
+
+    def on_login_exitoso(self, user_id, username):
+        """Callback ejecutado por la pantalla de login al autenticarse con éxito"""
+        self.usuario_id = user_id
+        self.usuario_nombre = username
+        
+        # Cambiamos el título de la ventana para ver qué usuario está activo
+        self.root.title(f"Entrenamiento Postural - Usuario: {username}")
+        
+        # Ocultamos el login y ahora SÍ permitimos pasar a la pantalla de inicio
+        self.login.ocultar()
         self.inicio.mostrar()
 
-    # --- Métodos de sincronización con MAIN ---
+    # --- El resto de tus métodos se quedan exactamente IGUAL sin tocar una sola línea ---
 
     def confirmar_seleccion(self):
         """Activa la bandera para que el hilo del main inicie la cámara"""
@@ -61,12 +86,10 @@ class AppGUI:
         self.entrenamiento.ocultar()
         self.final.mostrar()
 
-    # --- Callbacks y navegación ---
-
     def seleccion_pack(self, pack_name):
         """Se ejecuta al elegir un pack en la pantalla de inicio"""
         self.selected_pack = pack_name
-        self.confirmado = False # Aseguramos que no empiece antes de confirmar
+        self.confirmado = False 
         self.mostrar_confirmacion(pack_name)
 
     def mostrar_confirmacion(self, pack_name):
@@ -90,7 +113,6 @@ class AppGUI:
         btn_frame = tk.Frame(ventana, bg="#0D1B2A")
         btn_frame.pack(pady=20)
 
-        # Botón Aceptar: Llama a confirmar_seleccion para avisar al Main
         Button(btn_frame, text="Aceptar", font=self.fuentes["boton"], fg="#FFFFFF", bg="#42A5F5",
                width=12, pady=10, command=self.confirmar_seleccion).pack(side="left", padx=20)
         
