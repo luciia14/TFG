@@ -1,4 +1,3 @@
-# database.py
 import sqlite3
 
 DB_NAME = "tfg_entrenamiento.db"
@@ -7,11 +6,11 @@ def conectar():
     return sqlite3.connect(DB_NAME)
 
 def inicializar_db():
-    """Crea la tabla de usuarios con campos profesionales si no existe."""
+    """Crea la estructura completa de la base de datos."""
     conn = conectar()
     cursor = conn.cursor()
     
-    # Tabla de Usuarios ampliada con Perfil
+    # 1. Tabla de Usuarios
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,23 +21,37 @@ def inicializar_db():
         )
     ''')
     
-    # Tabla de Historial vacía por ahora (esquema inicial funcional)
+    # 2. Tabla de Sesiones (Resumen del entrenamiento)
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS historial (
+        CREATE TABLE IF NOT EXISTS sesiones (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             usuario_id INTEGER,
-            fecha TEXT DEFAULT CURRENT_TIMESTAMP,
             pack_name TEXT,
-            ejercicios_completados INTEGER,
+            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
+        )
+    ''')
+    
+    # 3. Tabla de Historial Detallado (Análisis biomecánico en crudo)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS historial_detallado (
+            session_id INTEGER PRIMARY KEY,
+            hombros_magnitud REAL,
+            codos_magnitud REAL,
+            espalda_magnitud REAL,
+            cadera_magnitud REAL,
+            rodillas_magnitud REAL,
+            cuello_magnitud REAL,
+            FOREIGN KEY(session_id) REFERENCES sesiones(id)
         )
     ''')
     
     conn.commit()
     conn.close()
 
+# --- FUNCIONES DE USUARIO ---
+
 def registrar_usuario(username, password, nombre_completo, fecha_nacimiento):
-    """Registra un nuevo usuario con su perfil completo."""
     try:
         conn = conectar()
         cursor = conn.cursor()
@@ -50,10 +63,9 @@ def registrar_usuario(username, password, nombre_completo, fecha_nacimiento):
         conn.close()
         return True
     except sqlite3.IntegrityError:
-        return False  # El nombre de usuario ya existe
+        return False
 
 def verificar_usuario(username, password):
-    """Verifica credenciales. Devuelve el ID del usuario o None si son incorrectas."""
     conn = conectar()
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM usuarios WHERE username = ? AND password = ?", (username, password))
@@ -61,9 +73,40 @@ def verificar_usuario(username, password):
     conn.close()
     return user[0] if user else None
 
-def obtener_recomendacion_usuario(usuario_id):
-    """Función temporal integrada para que no falle app_gui.py"""
-    return "🧠 [Estado IA: Sin Historial] ¡Bienvenido! Completa tus primeros packs para analizar tu postura."
+# --- FUNCIONES DE ANÁLISIS BIOMECÁNICO ---
 
-# Inicializamos automáticamente al importar
+def guardar_sesion_completa(usuario_id, pack_name, magnitudes):
+    """
+    Guarda el resumen de la sesión y los valores en crudo del análisis.
+    magnitudes: dict {'hombros': 0.0, 'codos': 0.0, ...}
+    """
+    conn = conectar()
+    cursor = conn.cursor()
+    
+    # 1. Registrar sesión
+    cursor.execute('''
+        INSERT INTO sesiones (usuario_id, pack_name) VALUES (?, ?)
+    ''', (usuario_id, pack_name))
+    
+    session_id = cursor.lastrowid
+    
+    # 2. Registrar detalle (valores en crudo)
+    cursor.execute('''
+        INSERT INTO historial_detallado 
+        (session_id, hombros_magnitud, codos_magnitud, espalda_magnitud, cadera_magnitud, rodillas_magnitud, cuello_magnitud)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (session_id, magnitudes['hombros'], magnitudes['codos'], magnitudes['espalda'], 
+          magnitudes['cadera'], magnitudes['rodillas'], magnitudes['cuello']))
+    
+    conn.commit()
+    conn.close()
+
+def obtener_recomendacion_usuario(usuario_id):
+    """
+    En el futuro, aquí consultaremos los datos de 'historial_detallado' 
+    para sugerir el pack que más necesite el usuario.
+    """
+    return "🧠 [Estado IA: Sistema Listo] Completa tu entrenamiento para generar tu perfil biomecánico."
+
+# Inicializamos la base de datos al importar el módulo
 inicializar_db()
