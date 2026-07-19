@@ -23,7 +23,7 @@ class PantallaHistorial:
         container = tk.Frame(self.frame, bg="#0D1B2A")
         container.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
-        # --- Estilos Treeview (Fondo oscuro y fuente grande) ---
+        # --- Estilos Treeview ---
         style = ttk.Style()
         style.theme_use("default")
         style.configure("Treeview", background="#0D1B2A", foreground="white", 
@@ -32,7 +32,7 @@ class PantallaHistorial:
                         background="#1B3B5F", foreground="white")
         style.map("Treeview", background=[('selected', '#1B3B5F')])
 
-        # Columna 0: Historial (Más estrecho)
+        # Columna 0: Historial
         self.tree = ttk.Treeview(container, columns=("fecha", "pack"), show="headings")
         self.tree.heading("fecha", text="Fecha")
         self.tree.heading("pack", text="Ejercicio")
@@ -74,19 +74,23 @@ class PantallaHistorial:
         # Crear figura
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 5), facecolor="#0D1B2A")
         
-        # Estilo fondo oscuro y ejes fijos (0-1000, 1-12)
-        for ax in [ax1, ax2]:
+        # Títulos y ejes específicos
+        titulos = ["Análisis Tren Superior (Índice de Corrección)", "Análisis Tren Inferior (Índice de Corrección)"]
+        axes = [ax1, ax2]
+        
+        for i, ax in enumerate(axes):
             ax.set_facecolor("#0D1B2A")
             ax.tick_params(colors='white')
             ax.set_ylim(0, 1000)
             ax.set_xlim(1, 12)
+            ax.set_title(titulos[i], color='white', fontsize=11, pad=10)
+            ax.set_ylabel("Puntuación de Error", color='white', fontsize=9)
             for spine in ax.spines.values(): 
                 spine.set_color('white')
 
         # Procesar y dibujar gráficas de forma individual por articulación
         art_sets = [['hombros', 'codos', 'espalda'], ['cadera', 'rodillas', 'cuello']]
-        axes = [ax1, ax2]
-
+        
         for i, grupo in enumerate(art_sets):
             for art in grupo:
                 # Filtrar solo valores > 0
@@ -98,6 +102,8 @@ class PantallaHistorial:
                     axes[i].plot(x_art, y_art, 'o-', label=art.capitalize())
 
             axes[i].legend(loc='upper right', fontsize='x-small', facecolor="#0D1B2A", labelcolor='white')
+
+        plt.tight_layout()
 
         # Integrar en Tkinter
         canvas = FigureCanvasTkAgg(fig, master=self.frame_graficos)
