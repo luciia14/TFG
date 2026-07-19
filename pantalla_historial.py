@@ -30,12 +30,12 @@ class PantallaHistorial:
                         fieldbackground="#0D1B2A", font=("Arial", 14), rowheight=40)
         style.configure("Treeview.Heading", font=("Arial", 14, "bold"), 
                         background="#1B3B5F", foreground="white")
-        # Quitar bordes blancos de selección
         style.map("Treeview", background=[('selected', '#1B3B5F')])
 
         # Columna 0: Historial (Más estrecho)
         self.tree = ttk.Treeview(container, columns=("fecha", "pack"), show="headings")
-        self.tree.heading("fecha", text="Fecha"); self.tree.heading("pack", text="Ejercicio")
+        self.tree.heading("fecha", text="Fecha")
+        self.tree.heading("pack", text="Ejercicio")
         self.tree.column("fecha", width=180, anchor="center")
         self.tree.column("pack", width=80, anchor="center")
         self.tree.grid(row=0, column=0, sticky="ns", padx=(0, 20))
@@ -54,7 +54,8 @@ class PantallaHistorial:
     def mostrar(self, usuario_id):
         self.frame.pack(fill=tk.BOTH, expand=True)
         # Cargar tabla
-        for i in self.tree.get_children(): self.tree.delete(i)
+        for i in self.tree.get_children(): 
+            self.tree.delete(i)
         for s in database.obtener_lista_sesiones(usuario_id):
             self.tree.insert("", "end", values=(str(s['fecha'])[:16], s['pack']))
         
@@ -67,7 +68,8 @@ class PantallaHistorial:
             widget.destroy()
 
         datos = database.obtener_magnitudes_para_graficos(usuario_id)
-        if not datos: return
+        if not datos: 
+            return
 
         # Crear figura
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 5), facecolor="#0D1B2A")
@@ -78,23 +80,24 @@ class PantallaHistorial:
             ax.tick_params(colors='white')
             ax.set_ylim(0, 1000)
             ax.set_xlim(1, 12)
-            for spine in ax.spines.values(): spine.set_color('white')
+            for spine in ax.spines.values(): 
+                spine.set_color('white')
 
-        x = range(1, len(datos) + 1)
-        
-        # Gráfico 1
-        for art in ['hombros', 'codos', 'espalda']:
-            y = [d[art] for d in datos]
-            ax1.plot(x, y, 'o-', label=art.capitalize())
-        
-        # Gráfico 2
-        for art in ['cadera', 'rodillas', 'cuello']:
-            y = [d[art] for d in datos]
-            ax2.plot(x, y, 'o-', label=art.capitalize())
+        # Procesar y dibujar gráficas de forma individual por articulación
+        art_sets = [['hombros', 'codos', 'espalda'], ['cadera', 'rodillas', 'cuello']]
+        axes = [ax1, ax2]
 
-        # Leyendas
-        ax1.legend(loc='upper right', fontsize='x-small', facecolor="#0D1B2A", labelcolor='white')
-        ax2.legend(loc='upper right', fontsize='x-small', facecolor="#0D1B2A", labelcolor='white')
+        for i, grupo in enumerate(art_sets):
+            for art in grupo:
+                # Filtrar solo valores > 0
+                x_art = [idx + 1 for idx, d in enumerate(datos) if d[art] > 0]
+                y_art = [d[art] for d in datos if d[art] > 0]
+                
+                # Solo dibujar si hay datos para esta articulación
+                if y_art:
+                    axes[i].plot(x_art, y_art, 'o-', label=art.capitalize())
+
+            axes[i].legend(loc='upper right', fontsize='x-small', facecolor="#0D1B2A", labelcolor='white')
 
         # Integrar en Tkinter
         canvas = FigureCanvasTkAgg(fig, master=self.frame_graficos)
