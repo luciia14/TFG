@@ -1,11 +1,16 @@
 # posture_feedback.py
 
-def feedback_joint(angle, target_angle, joint_name, joint_type):
+def feedback_joint(angle, target_angle, joint_name, joint_type, engine):
     """
     Calcula el feedback d'una articulación según la diferencia con el ángulo objetivo.
     joint_type: 'hombro' o 'codo'
     """
     diff = target_angle - angle
+
+    # --- INTEGRACIÓN: Registramos el error en el motor ---
+    # Convertimos el tipo a plural para que coincida con las llaves de MetricsEngine
+    llave_motor = "hombros" if joint_type == "hombro" else "codos"
+    engine.update(llave_motor, diff)
 
     if abs(diff) < 5:
         return None
@@ -32,7 +37,7 @@ def feedback_joint(angle, target_angle, joint_name, joint_type):
             return f"Cierra bastante el {joint_name}"
 
 
-def generate_feedback(angles, state):
+def generate_feedback(angles, state, engine):
     """
     Genera feedback según la fase actual (state) y los ángulos medidos.
     state = 0 → brazos estirados
@@ -76,7 +81,9 @@ def generate_feedback(angles, state):
     for joint, target_angle in targets.items():
         joint_spanish = nombres_castellano.get(joint, joint)
         joint_type = tipos_articulacion.get(joint, "hombro")
-        f = feedback_joint(angles[joint], target_angle, joint_spanish, joint_type)
+        
+        # Pasamos el engine a feedback_joint
+        f = feedback_joint(angles[joint], target_angle, joint_spanish, joint_type, engine)
         if f:
             feedbacks.append(f)
 

@@ -64,13 +64,7 @@ def bucle_ejercicios(app):
                         correct = ejercicio["funcion"](angles)
 
                         # --- INTEGRACIÓN DE MÉTRICAS ---
-                        # Registramos valores en el motor en cada frame
-                        engine.update('hombros', angles.get('right_shoulder', 0), 90)
-                        engine.update('codos', angles.get('right_elbow', 0), 90)
-                        engine.update('espalda', angles.get('back', 0), 0)
-                        engine.update('cadera', angles.get('hip', 0), 0)
-                        engine.update('rodillas', angles.get('knee', 0), 0)
-                        engine.update('cuello', angles.get('neck', 0), 0)
+                        # (La lógica de registro está ahora dentro de generate_feedback)
 
                         if correct:
                             # --- LÓGICA DE POSTURA CORRECTA ---
@@ -108,7 +102,8 @@ def bucle_ejercicios(app):
                                     error_detectado_desde = now
                                 
                                 if now - error_detectado_desde >= umbral_error:
-                                    errores = generate_feedback(angles, idx)
+                                    # --- MODIFICACIÓN: SE PASA EL ENGINE AQUÍ ---
+                                    errores = generate_feedback(angles, idx, engine)
                                     if errores:
                                         # Tomamos el error (generate_feedback ya prioriza)
                                         error_a_decir = errores[0].upper()
