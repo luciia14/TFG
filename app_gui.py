@@ -1,12 +1,12 @@
-# app_gui.py
 import tkinter as tk
 from styles import cargar_fuentes
-from packs import exercise_packs  # importamos los packs
+from packs import exercise_packs
 from pantalla_login import PantallaLogin
-from pantalla_principal import PantallaPrincipal # <-- IMPORTANTE: La nueva pantalla
-from pantalla_inicio import PantallaInicio       # <-- La usamos para elegir packs
+from pantalla_principal import PantallaPrincipal
+from pantalla_inicio import PantallaInicio
 from pantalla_entrenamiento import PantallaEntrenamiento
 from pantalla_final import PantallaFinal
+from pantalla_historial import PantallaHistorial
 
 # Tiempo fijo por defecto
 TIEMPO_EJERCICIO = 5
@@ -24,87 +24,82 @@ class AppGUI:
         self.usuario_id = None
         self.usuario_nombre = None
 
-        # Variables de control para el MAIN
+        # Variables de control para el flujo
         self.selected_pack = None
         self.ejercicio_actual = 0
         self.confirmado = False  
 
-        # 1. Creamos las pantallas de siempre
+        # 1. Creamos las pantallas
         self.inicio = PantallaInicio(self.root, self.fuentes, self.seleccion_pack)
         self.entrenamiento = PantallaEntrenamiento(self.root, self.fuentes)
         self.final = PantallaFinal(self.root, self.fuentes, self.reiniciar_entrenamiento, self.salir)
         
-        # 2. Inicializamos el nuevo Dashboard (Pantalla Principal)
+        # 2. Inicializamos el Dashboard Principal (sin botón custom)
         self.principal = PantallaPrincipal(
             self.root, 
             self.fuentes, 
             cb_entrenamiento=self.abrir_modo_entrenamiento,
-            cb_custom=self.abrir_custom,
             cb_progreso=self.abrir_progreso,
             cb_logout=self.cerrar_sesion
         )
         
-        # 3. Inicializamos Login
+        # 3. Inicializamos el Historial
+        self.historial = PantallaHistorial(self.root, self.fuentes, self.volver_a_principal)
+        
+        # 4. Inicializamos Login
         self.login = PantallaLogin(self.root, self.fuentes, self.on_login_exitoso)
 
-        # 4. Ocultamos las que no deben verse al arrancar
+        # 5. Ocultamos las que no deben verse al arrancar
         self.inicio.ocultar()
         self.principal.ocultar()
+        self.historial.ocultar()
 
-        # 5. Mostramos el login
+        # 6. Mostramos el login
         self.login.mostrar()
 
     # ==========================================
     # SISTEMA DE NAVEGACIÓN Y SESIÓN
     # ==========================================
     def on_login_exitoso(self, user_id, username):
-        """Pasa del Login al Dashboard Principal"""
         self.usuario_id = user_id
         self.usuario_nombre = username
-        
         self.root.title(f"Entrenamiento Postural - Usuario: {username}")
-        
-        # Le pasamos el nombre al Dashboard para que diga ¡Hola, Nombre!
         self.principal.actualizar_saludo(username)
-        
         self.login.ocultar()
         self.principal.mostrar()
 
     def abrir_modo_entrenamiento(self):
-        """Pasa del Dashboard a la selección de Packs (pantalla_inicio)"""
         self.principal.ocultar()
         self.inicio.mostrar()
 
-    def abrir_custom(self):
-        """(En construcción)"""
-        print("Módulo 'Customizar Entrenamiento' en desarrollo...")
-
     def abrir_progreso(self):
-        """(En construcción)"""
-        print("Módulo 'Mi Progreso' en desarrollo...")
+        self.principal.ocultar()
+        self.historial.mostrar(self.usuario_id)
+
+    def volver_a_principal(self):
+        self.historial.ocultar()
+        self.principal.mostrar()
 
     def cerrar_sesion(self):
-        """Cierra la sesión y vuelve al Login"""
         self.usuario_id = None
         self.usuario_nombre = None
         self.root.title("Entrenamiento Postural")
-        
         self.principal.ocultar()
         self.login.mostrar()
 
     # ==========================================
-    # FLUJO DE ENTRENAMIENTO (Se queda igual)
+    # FLUJO DE ENTRENAMIENTO
     # ==========================================
     def confirmar_seleccion(self):
         self.confirmado = True
         if hasattr(self, 'ventana_confirmacion'):
             self.ventana_confirmacion.destroy()
+        # Aquí dispararías el flujo hacia la pantalla de entrenamiento
 
     def actualizar_interfaz_ejercicio(self, idx, nombre, total_ejercicios):
         self.ejercicio_actual = idx
         self.inicio.ocultar()
         self.final.ocultar()
-        
         self.entrenamiento.mostrar_ejercicio(
             nombre,
             segundos=TIEMPO_EJERCICIO,
@@ -117,7 +112,6 @@ class AppGUI:
         self.entrenamiento.actualizar_feedback(feedback_texto)
 
     def finalizar_entrenamiento_gui(self):
-        self.entrenando = False
         self.entrenamiento.ocultar()
         self.final.mostrar()
 
@@ -160,7 +154,6 @@ class AppGUI:
         self.selected_pack = None
         self.confirmado = False
         self.ejercicio_actual = 0
-        # Al acabar, volvemos a la pantalla del Dashboard (Principal)
         self.principal.mostrar() 
 
     def salir(self):
