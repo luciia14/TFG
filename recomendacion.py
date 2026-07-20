@@ -24,7 +24,7 @@ def generar_recomendacion_con_ia(datos_sesion, historial_usuario):
     3. Equilibra la carga: si ha entrenado mucho piernas, sugiérele compensar con torso/brazos (Pack 1, 2 o 3).
     4. Recomienda 2 packs específicos explicando el motivo brevemente.
     
-    Respuesta motivadora, directa y de máximo 3 líneas.
+    Respuesta motivadora, directa y de máximo 2 líneas.
     """
 
     try:
