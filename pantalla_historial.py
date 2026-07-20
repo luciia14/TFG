@@ -3,6 +3,7 @@ from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import database
+import threading # Importado para evitar el bloqueo
 
 class PantallaHistorial:
     def __init__(self, root, fuentes, cb_volver):
@@ -45,25 +46,36 @@ class PantallaHistorial:
         self.frame_graficos.grid(row=0, column=1, sticky="nsew")
         container.grid_columnconfigure(1, weight=1)
 
-        # Recomendaciones (Justo debajo)
-        self.lbl_reco = tk.Label(container, text="", font=fuentes["texto"], 
-                                 fg="#80D8FF", bg="#1B3B5F", wraplength=800, 
-                                 justify="left", padx=10, pady=10)
-        self.lbl_reco.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(10, 0))
+        # Recomendaciones (Espacio ampliado con pady=(20, 20))
+        self.lbl_reco = tk.Label(container, text="Cargando análisis de la IA...", font=fuentes["texto"], 
+                                 fg="#80D8FF", bg="#1B3B5F", wraplength=1000, 
+                                 justify="left", padx=15, pady=20)
+        self.lbl_reco.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(20, 20))
 
     def mostrar(self, usuario_id):
         self.frame.pack(fill=tk.BOTH, expand=True)
-        # Cargar tabla
+        
+        # 1. Cargar tabla
         for i in self.tree.get_children(): 
             self.tree.delete(i)
         for s in database.obtener_lista_sesiones(usuario_id):
             self.tree.insert("", "end", values=(str(s['fecha'])[:16], s['pack']))
         
-        self.lbl_reco.config(text=database.obtener_recomendacion_usuario(usuario_id))
+        # 2. Actualizar consejo IA usando hilos para no bloquear la interfaz
+        self.lbl_reco.config(text="🧠 Analizando tus resultados con IA...")
+        
+        def tarea_ia():
+            consejo = database.obtener_recomendacion_usuario(usuario_id)
+            # Actualizamos la interfaz desde el hilo principal de Tkinter
+            self.lbl_reco.after(0, lambda: self.lbl_reco.config(text=consejo))
+            
+        threading.Thread(target=tarea_ia, daemon=True).start()
+        
+        # 3. Dibujar gráficos
         self.dibujar_graficos(usuario_id)
 
     def dibujar_graficos(self, usuario_id):
-        # Limpiar gráfico anterior para evitar solapamientos
+        # Limpiar gráfico anterior
         for widget in self.frame_graficos.winfo_children():
             widget.destroy()
 
@@ -74,7 +86,6 @@ class PantallaHistorial:
         # Crear figura
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 5), facecolor="#0D1B2A")
         
-        # Títulos y ejes específicos
         titulos = ["Análisis Tren Superior (Índice de Corrección)", "Análisis Tren Inferior (Índice de Corrección)"]
         axes = [ax1, ax2]
         
@@ -84,23 +95,18 @@ class PantallaHistorial:
             ax.set_ylim(0, 1000)
             ax.set_xlim(1, 12)
             ax.set_title(titulos[i], color='white', fontsize=11, pad=10)
-            ax.set_ylabel("Puntuación de Error", color='white', fontsize=9)
+            ax.set_ylabel("Error", color='white', fontsize=9)
             for spine in ax.spines.values(): 
                 spine.set_color('white')
 
-        # Procesar y dibujar gráficas de forma individual por articulación
         art_sets = [['hombros', 'codos', 'espalda'], ['cadera', 'rodillas', 'cuello']]
         
         for i, grupo in enumerate(art_sets):
             for art in grupo:
-                # Filtrar solo valores > 0
                 x_art = [idx + 1 for idx, d in enumerate(datos) if d[art] > 0]
                 y_art = [d[art] for d in datos if d[art] > 0]
-                
-                # Solo dibujar si hay datos para esta articulación
                 if y_art:
                     axes[i].plot(x_art, y_art, 'o-', label=art.capitalize())
-
             axes[i].legend(loc='upper right', fontsize='x-small', facecolor="#0D1B2A", labelcolor='white')
 
         plt.tight_layout()

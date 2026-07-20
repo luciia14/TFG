@@ -1,4 +1,5 @@
 import sqlite3
+import recomendacion  # Importamos el archivo de IA que has creado
 
 DB_NAME = "tfg_entrenamiento.db"
 
@@ -128,8 +129,25 @@ def obtener_magnitudes_para_graficos(usuario_id):
         'cadera': f[3], 'rodillas': f[4], 'cuello': f[5]
     } for f in filas]
 
+def obtener_historial_de_packs(usuario_id):
+    """Extrae el historial de packs realizados para la IA."""
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("SELECT pack_name FROM sesiones WHERE usuario_id = ? ORDER BY fecha ASC", (usuario_id,))
+    filas = cursor.fetchall()
+    conn.close()
+    return [f[0] for f in filas]
+
 def obtener_recomendacion_usuario(usuario_id):
-    return "🧠 [Estado IA: Sistema Listo] Completa tu entrenamiento para generar tu perfil biomecánico."
+    """Genera una recomendación inteligente conectando con el archivo recomendacion.py."""
+    magnitudes = obtener_magnitudes_para_graficos(usuario_id)
+    historial = obtener_historial_de_packs(usuario_id)
+    
+    if not magnitudes:
+        return "🧠 [Estado IA: Sistema Listo] Completa tu entrenamiento para generar tu perfil biomecánico."
+    
+    # Llamamos a la función de tu archivo 'recomendacion.py'
+    return recomendacion.generar_recomendacion_con_ia(magnitudes[-1], historial)
 
 # Inicializamos
 inicializar_db()
