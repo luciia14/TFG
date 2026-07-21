@@ -1,62 +1,104 @@
-# pantalla_inicio.py
+import customtkinter as ctk
 import tkinter as tk
-from tkinter import Label
 from styles import COLOR_TITULO, COLOR_BOTON, COLOR_BOTON_SEC
 from packs import exercise_packs
 
 
 class PantallaInicio:
-    def __init__(self, root, fuentes, on_pack_seleccionado):
+    def __init__(self, root, fuentes, on_pack_seleccionado, cb_volver=None):
         self.root = root
         self.fuentes = fuentes
         self.on_pack_seleccionado = on_pack_seleccionado
-        self.pack_buttons = []
+        self.cb_volver = cb_volver
 
-        # Mensaje de bienvenida
-        self.label_msg = Label(
-            root,
-            text="Bienvenida! ¿Qué entrenamiento deseas realizar?",
-            font=fuentes["titulo"],
-            fg=COLOR_TITULO,
-            bg="#0D1B2A",
-            wraplength=900,
-            justify="center"
+        # Contenedor base de toda la pantalla
+        self.frame = ctk.CTkFrame(root, fg_color="#0D1B2A", corner_radius=0)
+
+        # ==========================================
+        # 1. ENCABEZADO MINIMALISTA
+        # ==========================================
+        self.header_frame = ctk.CTkFrame(self.frame, fg_color="transparent")
+        self.header_frame.pack(fill="x", pady=(20, 10), padx=45)
+
+        # Botón de Flecha Circular Grande
+        self.btn_volver = ctk.CTkButton(
+            self.header_frame, 
+            text="←", 
+            font=ctk.CTkFont(size=26, weight="bold"), 
+            fg_color="transparent", 
+            hover_color="#1E3A5F", 
+            text_color="#80D8FF",
+            width=48,
+            height=48,
+            corner_radius=24,
+            command=self.volver
         )
-        self.label_msg.place(x=50, y=50)
+        self.btn_volver.pack(side="left")
 
-        # Crear botones dinámicamente según los packs existentes
-        for i, pack_name in enumerate(list(exercise_packs.keys())):
-            lbl = tk.Label(
-                root,
-                text=pack_name,
-                font=fuentes["boton"],
-                fg="#FFFFFF",
-                bg=COLOR_BOTON_SEC,
-                width=25,
-                pady=15,
-                cursor="hand2"
+        # Título de la sección
+        ctk.CTkLabel(
+            self.header_frame, 
+            text="MÓDULOS DE ENTRENAMIENTO", 
+            font=ctk.CTkFont(size=18, weight="bold"), 
+            text_color="#80D8FF"
+        ).pack(side="right")
+
+        # Línea divisora superior
+        ctk.CTkFrame(self.frame, height=1, fg_color="#1E3A5F").pack(fill="x", padx=45, pady=(5, 15))
+
+        # ==========================================
+        # 2. TÍTULO PRINCIPAL
+        # ==========================================
+        ctk.CTkLabel(
+            self.frame, 
+            text="¿Qué entrenamiento deseas realizar?", 
+            font=ctk.CTkFont(size=28, weight="bold"), 
+            text_color="#FFFFFF"
+        ).pack(pady=(5, 15))
+
+        # ==========================================
+        # 3. CONTENEDOR DESLIZANTE (SCROLLABLE)
+        # ==========================================
+        self.scroll_container = ctk.CTkScrollableFrame(
+            self.frame,
+            fg_color="transparent",
+            scrollbar_button_color="#1E3A5F",
+            scrollbar_button_hover_color="#80D8FF",
+            width=620
+        )
+        self.scroll_container.pack(expand=True, fill="both", padx=40, pady=(0, 20))
+
+        font_btn = ctk.CTkFont(size=18, weight="bold")
+
+        # Generación dinámica de packs con tamaño uniforme y scroll automático
+        for pack_name, ejercicios in exercise_packs.items():
+            num_ejercicios = len(ejercicios)
+            texto_boton = f"{pack_name.upper()}  •  ({num_ejercicios} EJERCICIOS)" if isinstance(ejercicios, list) else pack_name.upper()
+
+            btn = ctk.CTkButton(
+                self.scroll_container,
+                text=texto_boton,
+                font=font_btn,
+                fg_color="#13273D",
+                border_color="#80D8FF",
+                border_width=2,
+                text_color="#FFFFFF",
+                hover_color="#1E3A5F",
+                corner_radius=16,
+                height=65,
+                command=lambda p=pack_name: self.on_pack_seleccionado(p)
             )
+            btn.pack(fill="x", padx=25, pady=8)
 
-            lbl.place(x=350, y=200 + i * 100)
-
-            # Efectos hover
-            lbl.bind("<Enter>", lambda e, l=lbl: l.config(bg=COLOR_BOTON))
-            lbl.bind("<Leave>", lambda e, l=lbl: l.config(bg=COLOR_BOTON_SEC))
-
-            # Click → devuelve el NOMBRE del pack ("Pack 1", "Pack 2", ...)
-            lbl.bind(
-                "<Button-1>",
-                lambda e, p=pack_name: self.on_pack_seleccionado(p)
-            )
-
-            self.pack_buttons.append(lbl)
+    def volver(self):
+        """Ejecuta el callback para volver al menú principal."""
+        if self.cb_volver:
+            self.cb_volver()
+        else:
+            self.ocultar()
 
     def mostrar(self):
-        self.label_msg.place(x=50, y=50)
-        for i, btn in enumerate(self.pack_buttons):
-            btn.place(x=350, y=200 + i * 100)
+        self.frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=1, relheight=1)
 
     def ocultar(self):
-        self.label_msg.place_forget()
-        for btn in self.pack_buttons:
-            btn.place_forget()
+        self.frame.place_forget()

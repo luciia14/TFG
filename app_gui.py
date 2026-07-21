@@ -35,8 +35,13 @@ class AppGUI:
         self.ejercicio_actual = 0
         self.confirmado = False  
 
-        # 1. Creamos las pantallas
-        self.inicio = PantallaInicio(self.root, self.fuentes, self.seleccion_pack)
+        # 1. Creamos las pantallas (Pasamos cb_volver para conectar la flecha de la pantalla inicio)
+        self.inicio = PantallaInicio(
+            self.root, 
+            self.fuentes, 
+            self.seleccion_pack, 
+            cb_volver=self.volver_a_principal
+        )
         self.entrenamiento = PantallaEntrenamiento(self.root, self.fuentes)
         self.final = PantallaFinal(self.root, self.fuentes, self.reiniciar_entrenamiento, self.salir)
         
@@ -77,6 +82,7 @@ class AppGUI:
         
         # Mostramos la pantalla principal
         self.principal.mostrar()
+
     def abrir_modo_entrenamiento(self):
         self.principal.ocultar()
         self.inicio.mostrar()
@@ -86,7 +92,9 @@ class AppGUI:
         self.historial.mostrar(self.usuario_id)
 
     def volver_a_principal(self):
+        # Ocultamos tanto el historial como la pantalla de packs
         self.historial.ocultar()
+        self.inicio.ocultar()
         self.principal.mostrar()
 
     def cerrar_sesion(self):
