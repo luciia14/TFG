@@ -1,4 +1,5 @@
-import tkinter as tk
+import customtkinter as ctk
+import tkinter as tk # Mantenemos para compatibilidad de tipos si hiciera falta
 from styles import cargar_fuentes
 from packs import exercise_packs
 from pantalla_login import PantallaLogin
@@ -8,15 +9,20 @@ from pantalla_entrenamiento import PantallaEntrenamiento
 from pantalla_final import PantallaFinal
 from pantalla_historial import PantallaHistorial
 
+# Configuración global de CustomTkinter
+ctk.set_appearance_mode("dark")  # Modo oscuro para darle ese toque moderno
+ctk.set_default_color_theme("blue")
+
 # Tiempo fijo por defecto
 TIEMPO_EJERCICIO = 5
 
 class AppGUI:
     def __init__(self):
-        self.root = tk.Tk()
+        self.root = ctk.CTk()
         self.root.title("Entrenamiento Postural")
         self.root.geometry("1000x700")
-        self.root.configure(bg="#0D1B2A")
+        # En CustomTkinter usamos fg_color en lugar de bg
+        self.root.configure(fg_color="#0D1B2A")
 
         self.fuentes = cargar_fuentes(self.root)
 
@@ -34,7 +40,7 @@ class AppGUI:
         self.entrenamiento = PantallaEntrenamiento(self.root, self.fuentes)
         self.final = PantallaFinal(self.root, self.fuentes, self.reiniciar_entrenamiento, self.salir)
         
-        # 2. Inicializamos el Dashboard Principal (sin botón custom)
+        # 2. Inicializamos el Dashboard Principal
         self.principal = PantallaPrincipal(
             self.root, 
             self.fuentes, 
@@ -65,9 +71,12 @@ class AppGUI:
         self.usuario_nombre = username
         self.root.title(f"Entrenamiento Postural - Usuario: {username}")
         self.principal.actualizar_saludo(username)
-        self.login.ocultar()
+        
+        # Destruimos la pantalla de login para liberar la memoria y limpiar el lienzo
+        self.login.destroy() 
+        
+        # Mostramos la pantalla principal
         self.principal.mostrar()
-
     def abrir_modo_entrenamiento(self):
         self.principal.ocultar()
         self.inicio.mostrar()
@@ -94,7 +103,6 @@ class AppGUI:
         self.confirmado = True
         if hasattr(self, 'ventana_confirmacion'):
             self.ventana_confirmacion.destroy()
-        # Aquí dispararías el flujo hacia la pantalla de entrenamiento
 
     def actualizar_interfaz_ejercicio(self, idx, nombre, total_ejercicios):
         self.ejercicio_actual = idx
@@ -121,26 +129,24 @@ class AppGUI:
         self.mostrar_confirmacion(pack_name)
 
     def mostrar_confirmacion(self, pack_name):
-        from tkinter import Toplevel, Label, Button
-
         ejercicios_pack = exercise_packs[pack_name]
         ejercicios_texto = "\n".join([f"{i+1}. {e['nombre']}" for i, e in enumerate(ejercicios_pack)])
 
-        ventana = Toplevel(self.root)
+        ventana = ctk.CTkToplevel(self.root)
         ventana.title("Confirmación de Pack")
         ventana.geometry("600x400")
-        ventana.configure(bg="#0D1B2A")
+        ventana.configure(fg_color="#0D1B2A")
 
-        Label(ventana, text=f"Has seleccionado {pack_name}", font=self.fuentes["titulo"], fg="#E0F7FA", bg="#0D1B2A").pack(pady=20)
+        ctk.CTkLabel(ventana, text=f"Has seleccionado {pack_name}", font=self.fuentes["titulo"], text_color="#E0F7FA", fg_color="transparent").pack(pady=20)
 
-        Label(ventana, text=f"Este pack contiene {len(ejercicios_pack)} ejercicios:\n\n{ejercicios_texto}\n\nCada ejercicio dura {TIEMPO_EJERCICIO} segundos",
-              font=self.fuentes["texto"], fg="#80D8FF", bg="#0D1B2A", justify="center").pack(pady=10)
+        ctk.CTkLabel(ventana, text=f"Este pack contiene {len(ejercicios_pack)} ejercicios:\n\n{ejercicios_texto}\n\nCada ejercicio dura {TIEMPO_EJERCICIO} segundos",
+                     font=self.fuentes["texto"], text_color="#80D8FF", fg_color="transparent", justify="center").pack(pady=10)
 
-        btn_frame = tk.Frame(ventana, bg="#0D1B2A")
+        btn_frame = ctk.CTkFrame(ventana, fg_color="#0D1B2A")
         btn_frame.pack(pady=20)
 
-        Button(btn_frame, text="Aceptar", font=self.fuentes["boton"], fg="#FFFFFF", bg="#42A5F5", width=12, pady=10, command=self.confirmar_seleccion).pack(side="left", padx=20)
-        Button(btn_frame, text="Cancelar", font=self.fuentes["boton"], fg="#FFFFFF", bg="#1B3B5F", width=12, pady=10, command=self.cancelar_seleccion).pack(side="left", padx=20)
+        ctk.CTkButton(btn_frame, text="Aceptar", font=self.fuentes["boton"], text_color="#FFFFFF", fg_color="#42A5F5", width=120, height=40, command=self.confirmar_seleccion).pack(side="left", padx=20)
+        ctk.CTkButton(btn_frame, text="Cancelar", font=self.fuentes["boton"], text_color="#FFFFFF", fg_color="#1B3B5F", width=120, height=40, command=self.cancelar_seleccion).pack(side="left", padx=20)
         
         self.ventana_confirmacion = ventana
 
