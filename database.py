@@ -139,15 +139,14 @@ def obtener_historial_de_packs(usuario_id):
     return [f[0] for f in filas]
 
 def obtener_recomendacion_usuario(usuario_id):
-  #  """Genera una recomendación inteligente conectando con el archivo recomendacion.py."""
-   # magnitudes = obtener_magnitudes_para_graficos(usuario_id)
-   # historial = obtener_historial_de_packs(usuario_id)
+    """Genera una recomendación inteligente conectando con el archivo recomendacion.py."""
+    magnitudes = obtener_magnitudes_para_graficos(usuario_id)
+    historial = obtener_historial_de_packs(usuario_id)
     
-   # if not magnitudes:
-    #    return "🧠 [Estado IA: Sistema Listo] Completa tu entrenamiento para generar tu perfil biomecánico."
+    if not magnitudes:
+        return "🧠 [Estado IA: Sistema Listo] Completa tu entrenamiento para generar tu perfil biomecánico."
     
-    # Llamamos a la función de tu archivo 'recomendacion.py'
-   # return recomendacion.generar_recomendacion_con_ia(magnitudes[-1], historial)
-    return "Esto es un texto de prueba. Te recomiendo mejorar la postura de los hombros y probar el Pack 2. Cuando el diseño esté listo, volveré a activar la IA de verdad."
+    return recomendacion.generar_recomendacion_con_ia(magnitudes[-1], historial)
+    #return "Esto es un texto de prueba. Te recomiendo mejorar la postura de los hombros y probar el Pack 2. Cuando el diseño esté listo, volveré a activar la IA de verdad."
 # Inicializamos
 inicializar_db()

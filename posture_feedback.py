@@ -2,20 +2,28 @@
 
 def feedback_joint(angle, target_angle, joint_name, joint_type, engine):
     """
-    Calcula el feedback d'una articulación según la diferencia con el ángulo objetivo.
-    joint_type: 'hombro' o 'codo'
+    Calcula el feedback d'una articulació según la diferencia con el ángulo objetivo.
+    joint_type: 'hombro', 'codo', 'rodilla' o 'apertura'
     """
     diff = target_angle - angle
 
     # --- INTEGRACIÓN: Registramos el error en el motor ---
-    # Convertimos el tipo a plural para que coincida con las llaves de MetricsEngine
-    llave_motor = "hombros" if joint_type == "hombro" else "codos"
-    engine.update(llave_motor, diff)
+    if joint_type == "hombro":
+        llave_motor = "hombros"
+    elif joint_type == "codo":
+        llave_motor = "codos"
+    elif joint_type in ["rodilla", "apertura"]:
+        llave_motor = "piernas"
+    else:
+        llave_motor = "general"
+        
+    if hasattr(engine, "update"):
+        engine.update(llave_motor, diff)
 
     if abs(diff) < 5:
         return None
 
-    # Feedback segons el tipus d'articulació
+    # Feedback según el tipo de articulación con escala (poco / bastante)
     if joint_type == "hombro":
         if 10 <= diff < 25:
             return f"Sube un poco más el {joint_name}"
@@ -36,17 +44,38 @@ def feedback_joint(angle, target_angle, joint_name, joint_type, engine):
         elif diff <= -25:
             return f"Cierra bastante el {joint_name}"
 
+    elif joint_type == "rodilla":
+        if 10 <= diff < 25:
+            return f"Extiende un poco más la {joint_name}"
+        elif diff >= 25:
+            return f"Extiende bastante la {joint_name}"
+        elif -25 < diff <= -5:
+            return f"Flexiona un poco la {joint_name}"
+        elif diff <= -25:
+            return f"Flexiona bastante la {joint_name}"
+
+    elif joint_type == "apertura":
+        if 10 <= diff < 25:
+            return "Abre un poco las piernas"
+        elif diff >= 25:
+            return "Abre bastante las piernas"
+        elif -25 < diff <= -5:
+            return "Cierra un poco las piernas"
+        elif diff <= -25:
+            return "Cierra bastante las piernas"
+
 
 def generate_feedback(angles, state, engine):
     """
     Genera feedback según la fase actual (state) y los ángulos medidos.
-    state = 0 → brazos estirados
+    state = 0 → posición de estrella
     state = 1 → brazos doblados 90°
+    state = 2 → brazos estirados
     """
     feedbacks = []
 
-    # Mantener las claves en inglés
-    if state == 0:  # Fase brazos estirados
+    # Definir objetivos según el estado/ejercicio actual
+    if state == 2:  # Fase brazos estirados
         targets = {
             "right_shoulder": 90,
             "right_elbow": 180,
@@ -60,6 +89,16 @@ def generate_feedback(angles, state, engine):
             "left_shoulder": 90,
             "left_elbow": 90
         }
+    elif state == 0:  # Posición de estrella (sin caderas)
+        targets = {
+            "right_shoulder": 180,
+            "left_shoulder": 180,
+            "right_elbow": 180,
+            "left_elbow": 180,
+            "right_knee": 175,
+            "left_knee": 175,
+            "leg_opening": 68
+        }
     else:
         targets = {}
 
@@ -68,21 +107,30 @@ def generate_feedback(angles, state, engine):
         "right_shoulder": "brazo derecho",
         "left_shoulder": "brazo izquierdo",
         "right_elbow": "codo derecho",
-        "left_elbow": "codo izquierdo"
+        "left_elbow": "codo izquierdo",
+        "right_knee": "rodilla derecha",
+        "left_knee": "rodilla izquierda",
+        "leg_opening": "apertura"
     }
 
+    # Clasificación del tipo de articulación para cada clave
     tipos_articulacion = {
         "right_shoulder": "hombro",
         "left_shoulder": "hombro",
         "right_elbow": "codo",
-        "left_elbow": "codo"
+        "left_elbow": "codo",
+        "right_knee": "rodilla",
+        "left_knee": "rodilla",
+        "leg_opening": "apertura"
     }
 
     for joint, target_angle in targets.items():
+        if joint not in angles:
+            continue
+            
         joint_spanish = nombres_castellano.get(joint, joint)
         joint_type = tipos_articulacion.get(joint, "hombro")
         
-        # Pasamos el engine a feedback_joint
         f = feedback_joint(angles[joint], target_angle, joint_spanish, joint_type, engine)
         if f:
             feedbacks.append(f)

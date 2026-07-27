@@ -4,7 +4,8 @@ from posture_definitions import (
     right_arm_stretched,
     left_arm_stretched,
     right_arm_bent_90,
-    left_arm_bent_90
+    left_arm_bent_90,
+    star_position
 )
 
 # ---------------- PACK 1: BÁSICO DE BRAZOS ----------------
@@ -35,18 +36,18 @@ pack2 = [
     {"nombre": "Brazo derecho estirado, izquierdo 90°", "funcion": ejercicio2_pack2}
 ]
 
-# ---------------- PACK 3: FOCALIZADO DERECHO ----------------
+# ---------------- PACK 3: ESTRELLA Y FOCALIZADO DERECHO ----------------
 def ejercicio1_pack3(angles):
+    """Posición de estrella"""
+    return star_position(angles)
+
+def ejercicio2_pack3(angles):
     """Brazo derecho estirado"""
     return right_arm_stretched(angles)
 
-def ejercicio2_pack3(angles):
-    """Brazo derecho doblado a 90°"""
-    return right_arm_bent_90(angles)
-
 pack3 = [
-    {"nombre": "Brazo derecho estirado", "funcion": ejercicio1_pack3},
-    {"nombre": "Brazo derecho a 90°", "funcion": ejercicio2_pack3}
+    {"nombre": "Posición de estrella", "funcion": ejercicio1_pack3},
+    {"nombre": "Brazo derecho estirado", "funcion": ejercicio2_pack3}
 ]
 
 # ---------------- PACK 4: FOCALIZADO IZQUIERDO ----------------
