@@ -1,5 +1,5 @@
 import customtkinter as ctk
-import tkinter as tk # Mantenemos para compatibilidad de tipos si hiciera falta
+import tkinter as tk
 from styles import cargar_fuentes
 from packs import exercise_packs
 from pantalla_login import PantallaLogin
@@ -10,10 +10,10 @@ from pantalla_final import PantallaFinal
 from pantalla_historial import PantallaHistorial
 
 # Configuración global de CustomTkinter
-ctk.set_appearance_mode("dark")  # Modo oscuro para darle ese toque moderno
+ctk.set_appearance_mode("dark")  
 ctk.set_default_color_theme("blue")
 
-# Tiempo fijo por defecto
+
 TIEMPO_EJERCICIO = 5
 
 class AppGUI:
@@ -21,12 +21,12 @@ class AppGUI:
         self.root = ctk.CTk()
         self.root.title("Entrenamiento Postural")
         self.root.geometry("1000x700")
-        # En CustomTkinter usamos fg_color en lugar de bg
+       
         self.root.configure(fg_color="#0D1B2A")
 
         self.fuentes = cargar_fuentes(self.root)
 
-        # --- Variables de sesión del usuario ---
+       
         self.usuario_id = None
         self.usuario_nombre = None
 
@@ -35,7 +35,7 @@ class AppGUI:
         self.ejercicio_actual = 0
         self.confirmado = False  
 
-        # 1. Creamos las pantallas (Pasamos cb_volver para conectar la flecha de la pantalla inicio)
+        # Creamos las pantallas 
         self.inicio = PantallaInicio(
             self.root, 
             self.fuentes, 
@@ -45,7 +45,7 @@ class AppGUI:
         self.entrenamiento = PantallaEntrenamiento(self.root, self.fuentes)
         self.final = PantallaFinal(self.root, self.fuentes, self.reiniciar_entrenamiento, self.salir)
         
-        # 2. Inicializamos el Dashboard Principal
+        # Inicializamos el Dashboard Principal
         self.principal = PantallaPrincipal(
             self.root, 
             self.fuentes, 
@@ -54,30 +54,28 @@ class AppGUI:
             cb_logout=self.cerrar_sesion
         )
         
-        # 3. Inicializamos el Historial
+        # Inicializamos el Historial
         self.historial = PantallaHistorial(self.root, self.fuentes, self.volver_a_principal)
         
-        # 4. Inicializamos Login
+        # Inicializamos Login
         self.login = PantallaLogin(self.root, self.fuentes, self.on_login_exitoso)
 
-        # 5. Ocultamos las que no deben verse al arrancar
+        # Ocultamos las que no deben verse al arrancar
         self.inicio.ocultar()
         self.principal.ocultar()
         self.historial.ocultar()
 
-        # 6. Mostramos el login
+        # Mostramos el login
         self.login.mostrar()
 
-    # ==========================================
-    # SISTEMA DE NAVEGACIÓN Y SESIÓN
-    # ==========================================
+    
     def on_login_exitoso(self, user_id, username):
         self.usuario_id = user_id
         self.usuario_nombre = username
         self.root.title(f"Entrenamiento Postural - Usuario: {username}")
         self.principal.actualizar_saludo(username)
         
-        # Destruimos la pantalla de login para liberar la memoria y limpiar el lienzo
+        # Destruimos la pantalla de login para liberar la memoria
         self.login.destroy() 
         
         # Mostramos la pantalla principal
@@ -104,9 +102,7 @@ class AppGUI:
         self.principal.ocultar()
         self.login.mostrar()
 
-    # ==========================================
-    # FLUJO DE ENTRENAMIENTO
-    # ==========================================
+  
     def confirmar_seleccion(self):
         self.confirmado = True
         if hasattr(self, 'ventana_confirmacion'):
