@@ -1,61 +1,89 @@
 import cv2
-import urllib.request
-import numpy as np
+import socket
+import threading
+import io
+import time
+from gtts import gTTS
+from pydub import AudioSegment
+import static_ffmpeg
+static_ffmpeg.add_paths()
 
 # --- CONFIGURACIÓN ---
-# Reemplaza con la dirección IP real de tu cámara Tasmota.
-IP_CAMARA = '192.168.1.129' 
-# Tasmota usa esta URL para el flujo MJPEG
-URL_STREAM = f'http://{IP_CAMARA}:81/stream'
+ESP32_IP = '192.168.1.129'  # Pon la IP real de tu ESP32
+UDP_PORT = 8888              # Puerto UDP configurado en la ESP32 para el audio
 
+# URL del streaming de vídeo (Servidor básico de ESP32-CAM o Tasmota)
+URL_STREAM = f'http://{ESP32_IP}:81/stream'
+
+# Configuración del Socket UDP para enviar audio
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+# --- FUNCIÓN PARA ENVIAR AUDIO AL ROBOT ---
+def enviar_audio(texto):
+    """
+    Convierte texto a voz y lo transmite vía UDP a la ESP32 / MAX98357A.
+    """
+    try:
+        print(f"Generando audio: '{texto}'...")
+        # 1. Convertir texto a MP3 en memoria
+        tts = gTTS(text=texto, lang='es')
+        mp3_buffer = io.BytesIO()
+        tts.write_to_fp(mp3_buffer)
+        mp3_buffer.seek(0)
+
+        # 2. Convertir a PCM 16kHz, mono, 16-bit (compatible con I2S)
+        audio = AudioSegment.from_file(mp3_buffer, format="mp3")
+        audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+        raw_data = audio.raw_data
+
+        print("Transmitiendo audio al altavoz...")
+        # 3. Enviar en paquetes UDP a la ESP32
+        chunk_size = 512
+        for i in range(0, len(raw_data), chunk_size):
+            chunk = raw_data[i:i + chunk_size]
+            sock.sendto(chunk, (ESP32_IP, UDP_PORT))
+            time.sleep(0.015)  # Control de flujo para no saturar la red
+            
+        print("Audio enviado con éxito.")
+    except Exception as e:
+        print(f"Error al enviar el audio: {e}")
+
+# --- INICIAR EL SALUDO DE BIENVENIDA (En segundo plano) ---
+# Se lanza en un hilo paralelo (Thread) para que no bloquee el inicio del vídeo OpenCV
+hilo_audio = threading.Thread(target=enviar_audio, args=("Hola, bienvenidos",))
+hilo_audio.start()
+
+# --- TRANSMISIÓN DE VÍDEO (OPENCV) ---
 print(f"Conectando a la cámara en {URL_STREAM}...")
-
-# Inicializar la captura de vídeo desde la URL
 stream = cv2.VideoCapture(URL_STREAM)
 
-# Comprobar si se ha abierto correctamente
 if not stream.isOpened():
     print("Error: No se pudo conectar a la transmisión de la cámara.")
-    print("Asegúrate de que la cámara esté encendida, el vídeo activado en la web y que la IP sea correcta.")
+    print("Asegúrate de que la cámara esté encendida y la IP sea correcta.")
     exit()
 
 print("Conexión exitosa. Presiona 'q' para salir.")
 
 while True:
-    # 1. Capturar el frame (imagen actual)
     ret, frame = stream.read()
 
-    # Si no se pudo leer el frame (ej: la cámara se desconecta), salir
     if not ret:
         print("Error al leer frame de la cámara.")
         break
 
-    # --- PROCESAMIENTO DE IMAGEN (EJEMPLO) ---
-    
-    # Ejemplo 1: Convertir la imagen a escala de grises
-    # (Muy útil para muchos tipos de procesamiento)
+    # --- PROCESAMIENTO DE IMAGEN ---
     processed_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # Ejemplo 2: Suavizar la imagen para reducir ruido antes de detectar bordes
-    # blurred_frame = cv2.GaussianBlur(processed_frame, (5, 5), 0)
-
-    # Ejemplo 3: Detectar bordes (Canny Edge Detection)
-    # Ajusta los umbrales (50, 150) si necesitas más o menos sensibilidad.
     edges_frame = cv2.Canny(processed_frame, 50, 150)
 
     # --- VISUALIZACIÓN ---
-    
-    # Mostrar la imagen original (en color)
-    cv2.imshow('Tasmota - Original (Color)', frame)
-    
-    # Mostrar la imagen procesada (bordes)
-    cv2.imshow('Tasmota - Procesada (Bordes)', edges_frame)
+    cv2.imshow('Camara Robot - Color', frame)
+    cv2.imshow('Camara Robot - Bordes', edges_frame)
 
-    # Detectar si se presiona la tecla 'q' para salir
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 # --- LIMPIEZA ---
 stream.release()
 cv2.destroyAllWindows()
+sock.close()
 print("Limpieza completada. Programa finalizado.")

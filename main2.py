@@ -6,42 +6,50 @@ from posture_estimation import get_all_angles
 from posture_feedback import generate_feedback
 from packs import exercise_packs
 from app_gui import AppGUI
-from voice_engine import locutor  # Importamos el motor de voz diseñado
-# --- NUEVAS IMPORTACIONES PARA MÉTRICAS Y BD ---
+from voice_engine import locutor
 from calculo_error import MetricsEngine 
 from database import guardar_sesion_completa
+from robot_controller import RobotController
 
-# Tiempo que se debe mantener la postura correcta
+# Tiempo objetivo de mantenimiento postural
 HOLD_TIME = 5
 
 def bucle_ejercicios(app):
     """
-    Controlador lógico principal con gestión de tiempos, persistencia y voz.
+    Controlador lógico principal: gestión de tiempos, análisis postural, 
+    persistencia de datos, salida por voz y control del robot Dynamixel.
     """
-    # 1. Instanciamos el motor de métricas
+    # Inicialización del motor de métricas y del robot
     engine = MetricsEngine()
+    robot = RobotController()
     
     while True:
-        # 1. Esperar a que el usuario confirme la selección en la GUI
+        # Espera de confirmación en GUI
         while not app.confirmado:
             time.sleep(0.1)
             if not app.root.winfo_exists():
                 return
 
-        # 2. Inicialización de recursos tras confirmación
+        # Carga de recursos y cámara tras confirmación
         pack = exercise_packs[app.selected_pack]
         pose_cam = PoseCamera("pose_landmarker.task")
         
-        # Reseteamos métricas al iniciar el pack
+        # Reinicio de métricas por sesión
         engine.reset()
+        
+        # Conexión al bus serie del robot y activación de torque
+        robot.conectar()
         
         try:
             for idx, ejercicio in enumerate(pack):
-                # Notificar inicio de ejercicio a la interfaz
+                # Notificación a GUI
                 app.root.after(0, lambda i=idx, n=ejercicio["nombre"]: 
                                app.actualizar_interfaz_ejercicio(i, n, len(pack)))
 
-                # --- VARIABLES DE ESTADO POR EJERCICIO ---
+                # Posicionamiento físico del robot Dynamixel
+                robot.mover_pose(idx, tiempo_espera=0.5)
+
+                # Variables de estado del ejercicio
                 inicio_ejercicio = time.time()
                 error_detectado_desde = None
                 correcto_detectado_desde = None
@@ -63,77 +71,81 @@ def bucle_ejercicios(app):
                         angles = get_all_angles(landmarks, frame.shape)
                         correct = ejercicio["funcion"](angles)
 
-                        # --- INTEGRACIÓN DE MÉTRICAS ---
-                        # (La lógica de registro está ahora dentro de generate_feedback)
-
+                        # Análisis kinemático
                         if correct:
-                            # --- LÓGICA DE POSTURA CORRECTA ---
-                            error_detectado_desde = None # Reset cronómetro error
+                            # Validación postural
+                            error_detectado_desde = None # Reset tiempo de error
                             
                             if correcto_detectado_desde is None:
                                 correcto_detectado_desde = now
                             
-                            # REGLA: 1 segundo estable para confirmar éxito
+                            # Estabilidad temporal requerida (1.0s)
                             if now - correcto_detectado_desde >= 1.0:
                                 if hold_start is None: 
                                     hold_start = now
                                 
                                 segundos_restantes = HOLD_TIME - int(now - hold_start)
                                 
-                                # Si es la primera vez que detectamos éxito estable, avisamos por voz
+                                # Feedback auditivo de éxito
                                 if mensaje_actual != "¡POSTURA CORRECTA!":
                                     mensaje_actual = "¡POSTURA CORRECTA!"
                                     locutor.decir("¡Posición correcta!", es_exito=True)
                                 
                                 if segundos_restantes <= 0: break 
                         else:
-                            # --- LÓGICA DE ERROR ---
-                            correcto_detectado_desde = None # Reset cronómetro éxito
+                            # Tratamiento de desviaciones
+                            correcto_detectado_desde = None # Reset tiempo de éxito
                             hold_start = None
                             segundos_restantes = HOLD_TIME
                             
-                            # REGLA: Silencio inicial de 2 segundos (el usuario se está colocando)
+                            # Tolerancia inicial de posicionamiento
                             if tiempo_transcurrido > 2.0:
                                 
-                                # REGLA: Persistencia (1.5s si venía de estar bien, 1.0s normal)
+                                # Histéresis de error
                                 umbral_error = 1.5 if mensaje_actual == "¡POSTURA CORRECTA!" else 1.0
                                 
                                 if error_detectado_desde is None:
                                     error_detectado_desde = now
                                 
                                 if now - error_detectado_desde >= umbral_error:
-                                    # --- MODIFICACIÓN: SE PASA EL ENGINE AQUÍ ---
+                                    # Diagnóstico de fallos
                                     errores = generate_feedback(angles, idx, engine)
                                     if errores:
-                                        # Tomamos el error (generate_feedback ya prioriza)
+                                        # Priorización de error
                                         error_a_decir = errores[0].upper()
                                         
-                                        # REGLA: No saturar la voz (mínimo 4s entre frases de error)
+                                        # Frecuencia máxima de voz
                                         if now - ultimo_mensaje_voz_hora > 4.0:
                                             locutor.decir(error_a_decir, es_exito=False)
                                             ultimo_mensaje_voz_hora = now
-                                            # Actualizamos GUI con todos los errores detectados
+                                            # Actualización de GUI
                                             mensaje_actual = "\n\n".join(errores).upper()
                                     else:
                                         mensaje_actual = "AJUSTA TU POSICIÓN"
 
-                        # Actualizar GUI de forma segura
+                        # Sincronización con GUI
                         app.root.after(0, lambda s=segundos_restantes, f=mensaje_actual: 
                                        app.actualizar_datos_tiempo_real(s, f))
 
                     cv2.imshow("Entrenamiento", frame)
-                    if cv2.waitKey(1) & 0xFF == 27: # ESC
+                    if cv2.waitKey(1) & 0xFF == 27: # Salida por teclado
                         app.root.after(0, app.salir)
                         return
 
-                # --- FIN DEL EJERCICIO ---
+                # Transición entre ejercicios
                 locutor.decir("¡Muy bien! Siguiente ejercicio", es_exito=True)
                 app.root.after(0, lambda: app.entrenamiento.actualizar_contador("✔"))
-                time.sleep(2.0) # Pausa dramática para que el usuario descanse
+                
+                # Reposicionamiento del robot a posición neutra durante el descanso
+                robot.ir_a_neutro()
+                time.sleep(2.0) # Intervalo de descanso
 
-            # --- FIN DEL PACK: PERSISTENCIA ---
+            # Registro persistente de sesión
             usuario_id = getattr(app, 'usuario_actual', 1)
             guardar_sesion_completa(usuario_id, app.selected_pack, engine.magnitudes)
+            
+            # Cierre de conexión con el robot
+            robot.desconectar()
             
             print("\n--- Entrenamiento Finalizado y datos guardados ---")
             app.root.after(0, app.finalizar_entrenamiento_gui)
@@ -148,6 +160,7 @@ def bucle_ejercicios(app):
             print(f"Error crítico: {e}")
             break
         finally:
+            robot.desconectar()
             if 'pose_cam' in locals():
                 pose_cam.release()
             cv2.destroyAllWindows()
@@ -155,13 +168,13 @@ def bucle_ejercicios(app):
 def main():
     app = AppGUI()
     
-    # Quitamos daemon=True para que Windows no cierre el hilo en silencio
+    # Gestión del hilo secundario
     hilo_logica = threading.Thread(target=bucle_ejercicios, args=(app,))
     
-    # Le damos 1 segundo de ventaja a la interfaz gráfica para que se estabilice en pantalla
+    # Retardo de estabilización
     app.root.after(1000, hilo_logica.start)
     
-    # Ejecutar la GUI
+    # Bucle principal de eventos GUI
     app.run()
 
 if __name__ == "__main__":

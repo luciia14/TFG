@@ -127,6 +127,28 @@ def leg_opening_angle(landmarks, image_shape):
     return compute_angle(rodilla_izq, centro_caderas, rodilla_der)
 
 
+def trunk_inclination(landmarks, image_shape):
+    """Calcula la inclinación del tronco respecto a la vertical"""
+    h, w, _ = image_shape
+    centro_hombros = np.array([
+        (landmarks[LEFT_SHOULDER].x + landmarks[RIGHT_SHOULDER].x) * w / 2,
+        (landmarks[LEFT_SHOULDER].y + landmarks[RIGHT_SHOULDER].y) * h / 2
+    ])
+    centro_caderas = np.array([
+        (landmarks[LEFT_HIP].x + landmarks[RIGHT_HIP].x) * w / 2,
+        (landmarks[LEFT_HIP].y + landmarks[RIGHT_HIP].y) * h / 2
+    ])
+    vector_vertical = np.array([0, -1])
+    vector_tronco = centro_hombros - centro_caderas
+    norma = np.linalg.norm(vector_tronco)
+    if norma == 0:
+        return 0.0
+    vector_tronco = vector_tronco / norma
+    cosine_angle = np.clip(np.dot(vector_tronco, vector_vertical), -1.0, 1.0)
+    angle = math.degrees(math.acos(cosine_angle))
+    return angle
+
+
 def get_all_angles(landmarks, image_shape):
     """Devuelve todos los ángulos necesarios en un diccionario"""
     return {
@@ -138,5 +160,6 @@ def get_all_angles(landmarks, image_shape):
         "left_hip": left_hip_angle(landmarks, image_shape),
         "right_knee": right_knee_angle(landmarks, image_shape),
         "left_knee": left_knee_angle(landmarks, image_shape),
-        "leg_opening": leg_opening_angle(landmarks, image_shape)
+        "leg_opening": leg_opening_angle(landmarks, image_shape),
+        "trunk": trunk_inclination(landmarks, image_shape)
     }

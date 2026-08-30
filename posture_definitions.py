@@ -37,7 +37,46 @@ def star_position(angles, tol=15):
         abs(angles.get("left_elbow", 0) - 180) <= tol and
         abs(angles.get("right_hip", 0) - 155) <= tol and
         abs(angles.get("left_hip", 0) - 155) <= tol and
-        abs(angles.get("right_knee", 0) - 175) <= tol and
-        abs(angles.get("left_knee", 0) - 175) <= tol and
+        abs(angles.get("right_knee", 0) - 165) <= tol + 10 and
+        abs(angles.get("left_knee", 0) - 165) <= tol +10 and
         abs(angles.get("leg_opening", 0) - 68) <= tol
+    )
+def lateral_squat_arms_up_position(angles, tol=20):
+    """Sentadilla lateral con brazos estirados"""
+    return (
+        abs(angles.get("trunk", 0) - 35) <= tol and
+        abs(angles.get("right_hip", 0) - 110) <= tol and
+        abs(angles.get("right_knee", 0) - 120) <= tol and
+        abs(angles.get("right_shoulder", 0) - 90) <= tol and
+        abs(angles.get("right_elbow", 0) - 180) <= tol
+    )
+
+def t_pose(angles, tol=15):
+    return (
+        abs(angles.get("right_shoulder", 0) - 90) <= tol and
+        abs(angles.get("left_shoulder", 0) - 90) <= tol and
+        abs(angles.get("right_elbow", 0) - 175) <= tol and
+        abs(angles.get("left_elbow", 0) - 175) <= tol
+    )
+
+def lunge_position(angles, tol=20):
+    return (
+        abs(angles.get("right_knee", 0) - 90) <= tol and
+        abs(angles.get("left_knee", 0) - 175) <= tol and
+        abs(angles.get("right_hip", 0) - 120) <= tol and
+        abs(angles.get("left_hip", 0) - 170) <= tol
+    )
+
+def full_body_alignment_position(angles, tol=20):
+    return (
+        abs(angles.get("neck", 0) - 170) <= tol and
+        abs(angles.get("trunk", 0) - 45) <= tol and
+        abs(angles.get("right_shoulder", 0) - 90) <= tol and
+        abs(angles.get("left_shoulder", 0) - 90) <= tol and
+        abs(angles.get("right_elbow", 0) - 175) <= tol and
+        abs(angles.get("left_elbow", 0) - 175) <= tol and
+        abs(angles.get("right_hip", 0) - 120) <= tol and
+        abs(angles.get("left_hip", 0) - 120) <= tol and
+        abs(angles.get("right_knee", 0) - 130) <= tol and
+        abs(angles.get("left_knee", 0) - 130) <= tol
     )

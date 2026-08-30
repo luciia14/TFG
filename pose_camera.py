@@ -3,7 +3,7 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-# Conexiones del esqueleto (MediaPipe Pose)
+# Conexiones del esqueleto
 POSE_CONNECTIONS = [
     (0, 1), (1, 2), (2, 3), (3, 7),
     (0, 4), (4, 5), (5, 6), (6, 8),
@@ -21,7 +21,7 @@ POSE_CONNECTIONS = [
 
 
 class PoseCamera:
-    def __init__(self, model_path, camera_index=0):
+    def __init__(self, model_path, camera_source=None):
         base_options = python.BaseOptions(model_asset_path=model_path)
 
         options = vision.PoseLandmarkerOptions(
@@ -31,9 +31,16 @@ class PoseCamera:
 
         self.detector = vision.PoseLandmarker.create_from_options(options)
 
-        self.cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+        
+        if camera_source is None:
+            self.camera_url = "http://192.168.1.100/stream"
+        else:
+            self.camera_url = camera_source
+
+        self.cap = cv2.VideoCapture(self.camera_url)
+        
         if not self.cap.isOpened():
-            raise RuntimeError("No se puede acceder a la cámara")
+            raise RuntimeError(f"No se puede conectar al streaming de la ESP en: {self.camera_url}")
 
     def _draw_landmarks(self, image, detection_result):
         annotated_image = image.copy()
@@ -64,13 +71,14 @@ class PoseCamera:
     def read(self):
         ret, frame = self.cap.read()
         if not ret:
+            # Si se pierde la conexión momentáneamente con la ESP, puedes reintentar abrir
             return None, None
 
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         mp_image = mp.Image(mp.ImageFormat.SRGB, frame_rgb)
 
         result = self.detector.detect(mp_image)
-        annotated_rgb = self._draw_landmarks(frame_rgb, result)
+        annotated_rgb = self.id_draw_landmarks(frame_rgb, result) if hasattr(self, '_draw_landmarks') else self._draw_landmarks(frame_rgb, result)
         annotated_bgr = cv2.cvtColor(annotated_rgb, cv2.COLOR_RGB2BGR)
 
         return annotated_bgr, result
