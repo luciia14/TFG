@@ -12,7 +12,7 @@ class PantallaHistorial:
         self.fuentes = fuentes
         self.frame = tk.Frame(root, bg="#0D1B2A")
         
-        # --- Encabezado ---
+        
         header = tk.Frame(self.frame, bg="#0D1B2A")
         header.pack(fill=tk.X, padx=20, pady=20)
         
@@ -34,7 +34,7 @@ class PantallaHistorial:
         tk.Label(header, text="HISTORIAL Y ANÁLISIS", font=fuentes["titulo"], 
                  fg="#E0F7FA", bg="#0D1B2A").pack(side="left", padx=20)
 
-        # --- Contenedor Principal (Grid) ---
+        
         container = tk.Frame(self.frame, bg="#0D1B2A")
         container.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
@@ -44,7 +44,7 @@ class PantallaHistorial:
         container.grid_rowconfigure(0, weight=1)    # Fila superior se expande
         container.grid_rowconfigure(1, weight=0)    # Fila de IA fija
 
-        # --- Estilos Treeview Ampliado y Moderno ---
+        
         style = ttk.Style()
         style.theme_use("default")
         
@@ -66,7 +66,7 @@ class PantallaHistorial:
             background="#1B3B5F", 
             foreground="#80D8FF",
             relief="flat",
-            padding=8              # Recuadro del encabezado más alto y grande
+            padding=8              
         )
         
         style.map(
@@ -87,7 +87,7 @@ class PantallaHistorial:
         self.frame_graficos = tk.Frame(container, bg="#0D1B2A")
         self.frame_graficos.grid(row=0, column=1, sticky="nsew")
 
-        # --- Área de Recomendaciones (Altura fija) ---
+        
         self.frame_reco_container = tk.Frame(container, bg="#0D1B2A")
         self.frame_reco_container.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(20, 0))
         
@@ -96,7 +96,7 @@ class PantallaHistorial:
         self.frame_reco.pack_propagate(False) 
 
         # TEXTO DINÁMICO
-        self.lbl_reco = tk.Label(self.frame_reco, text="🧠 Analizando tus resultados con IA...", 
+        self.lbl_reco = tk.Label(self.frame_reco, text=" Analizando tus resultados con IA...", 
                                  font=fuentes["texto"], fg="#80D8FF", bg="#1B3B5F", 
                                  wraplength=0, justify="left", anchor="nw")
         self.lbl_reco.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
@@ -114,7 +114,7 @@ class PantallaHistorial:
             for s in sesiones:
                 self.tree.insert("", "end", values=(str(s['fecha'])[:16], s['pack']))
         
-        self.lbl_reco.config(text="🧠 Analizando tus resultados con IA...")
+        self.lbl_reco.config(text=" Analizando tus resultados con IA...")
         
         def tarea_ia():
             consejo = database.obtener_recomendacion_usuario(usuario_id)

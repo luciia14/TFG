@@ -1,5 +1,5 @@
 import sqlite3
-import recomendacion  # Importamos el archivo de IA que has creado
+import recomendacion  
 
 DB_NAME = "tfg_entrenamiento.db"
 
@@ -50,7 +50,6 @@ def inicializar_db():
     conn.commit()
     conn.close()
 
-# --- FUNCIONES DE USUARIO ---
 
 def registrar_usuario(username, password, nombre_completo, fecha_nacimiento):
     try:
@@ -74,7 +73,6 @@ def verificar_usuario(username, password):
     conn.close()
     return user[0] if user else None
 
-# --- FUNCIONES DE ANÁLISIS BIOMECÁNICO ---
 
 def guardar_sesion_completa(usuario_id, pack_name, magnitudes):
     conn = conectar()
@@ -96,10 +94,8 @@ def guardar_sesion_completa(usuario_id, pack_name, magnitudes):
     conn.commit()
     conn.close()
 
-# --- NUEVAS FUNCIONES PARA EL DASHBOARD ---
 
 def obtener_lista_sesiones(usuario_id):
-    """Devuelve fecha y nombre de pack para el panel izquierdo (Treeview)."""
     conn = conectar()
     cursor = conn.cursor()
     cursor.execute('''
@@ -111,7 +107,6 @@ def obtener_lista_sesiones(usuario_id):
     return [{"fecha": f[0], "pack": f[1]} for f in filas]
 
 def obtener_magnitudes_para_graficos(usuario_id):
-    """Devuelve solo los valores de error para los gráficos del panel derecho."""
     conn = conectar()
     cursor = conn.cursor()
     cursor.execute('''
@@ -130,7 +125,6 @@ def obtener_magnitudes_para_graficos(usuario_id):
     } for f in filas]
 
 def obtener_historial_de_packs(usuario_id):
-    """Extrae el historial de packs realizados para la IA."""
     conn = conectar()
     cursor = conn.cursor()
     cursor.execute("SELECT pack_name FROM sesiones WHERE usuario_id = ? ORDER BY fecha ASC", (usuario_id,))
@@ -147,6 +141,5 @@ def obtener_recomendacion_usuario(usuario_id):
         return "🧠 [Estado IA: Sistema Listo] Completa tu entrenamiento para generar tu perfil biomecánico."
     
     return recomendacion.generar_recomendacion_con_ia(magnitudes[-1], historial)
-    #return "Esto es un texto de prueba. Te recomiendo mejorar la postura de los hombros y probar el Pack 2. Cuando el diseño esté listo, volveré a activar la IA de verdad."
 # Inicializamos
 inicializar_db()

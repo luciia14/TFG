@@ -16,8 +16,8 @@ RODILLA_IZQ = 25
 RODILLA_DER = 26
 TOBILLO_IZQ = 27
 TOBILLO_DER = 28
-PIE_IZQ = 31      # Talón o punta del pie izquierdo
-PIE_DER = 32      # Talón o punta del pie derecho
+PIE_IZQ = 31      
+PIE_DER = 32      
 
 # Mapeo de puntos que queremos supervisar
 PUNTOS_REQUERIDOS = {
@@ -42,7 +42,7 @@ UMBRAL_VISIBILIDAD = 0.55
 
 
 def verificar_puntos_faltantes(landmarks):
-    """Comprueba si alguno de los puntos clave está fuera del encuadre o no es visible."""
+    """Comprueba si alguno de los puntos clave no es visible."""
     faltantes = []
     
     for idx, nombre in PUNTOS_REQUERIDOS.items():

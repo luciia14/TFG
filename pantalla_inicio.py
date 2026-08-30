@@ -14,9 +14,7 @@ class PantallaInicio:
         # Contenedor base de toda la pantalla
         self.frame = ctk.CTkFrame(root, fg_color="#0D1B2A", corner_radius=0)
 
-        # ==========================================
-        # 1. ENCABEZADO MINIMALISTA
-        # ==========================================
+
         self.header_frame = ctk.CTkFrame(self.frame, fg_color="transparent")
         self.header_frame.pack(fill="x", pady=(20, 10), padx=45)
 
@@ -46,9 +44,6 @@ class PantallaInicio:
         # Línea divisora superior
         ctk.CTkFrame(self.frame, height=1, fg_color="#1E3A5F").pack(fill="x", padx=45, pady=(5, 15))
 
-        # ==========================================
-        # 2. TÍTULO PRINCIPAL
-        # ==========================================
         ctk.CTkLabel(
             self.frame, 
             text="¿Qué entrenamiento deseas realizar?", 
@@ -56,9 +51,6 @@ class PantallaInicio:
             text_color="#FFFFFF"
         ).pack(pady=(5, 15))
 
-        # ==========================================
-        # 3. CONTENEDOR DESLIZANTE (SCROLLABLE)
-        # ==========================================
         self.scroll_container = ctk.CTkScrollableFrame(
             self.frame,
             fg_color="transparent",

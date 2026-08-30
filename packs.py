@@ -14,7 +14,6 @@ from posture_definitions import (
     full_body_alignment_position
 )
 
-# ---------------- PACK 1: HOMBROS Y CODOS (BÁSICO) ----------------
 def ejercicio1_pack1(angles):
     """Ambos brazos extendidos horizontalmente"""
     return right_arm_stretched(angles) and left_arm_stretched(angles)
@@ -28,7 +27,6 @@ pack1 = [
     {"nombre": "Brazos a 90°", "funcion": ejercicio2_pack1}
 ]
 
-# ---------------- PACK 2: HOMBROS Y CODOS (INTERMEDIO) ----------------
 def ejercicio1_pack2(angles):
     """Apertura horizontal en postura T"""
     return t_pose(angles)
@@ -42,7 +40,6 @@ pack2 = [
     {"nombre": "Brazos elevados", "funcion": ejercicio2_pack2}
 ]
 
-# ---------------- PACK 3: CUELLO, TORSO Y BRAZOS ----------------
 def ejercicio1_pack3(angles):
     """Inclinación de tronco con alineación de cuello y brazos"""
     return torso_inclined(angles)
@@ -56,7 +53,6 @@ pack3 = [
     {"nombre": "Alineación corporal completa", "funcion": ejercicio2_pack3}
 ]
 
-# ---------------- PACK 4: PIERNAS, CUELLO, TORSO Y BRAZOS ----------------
 def ejercicio1_pack4(angles):
     """Apertura global en posición de estrella"""
     return star_position(angles)
@@ -70,7 +66,6 @@ pack4 = [
     {"nombre": "Sentadilla básica", "funcion": ejercicio2_pack4}
 ]
 
-# ---------------- PACK 5: PIERNAS INTENSO ----------------
 def ejercicio1_pack5(angles):
     """Sentadilla lateral con elevación de brazos"""
     return lateral_squat_arms_up_position(angles)

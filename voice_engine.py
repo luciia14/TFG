@@ -16,7 +16,6 @@ class VoiceEngine:
         if self.is_speaking and not es_exito:
             return
         
-        # hilo secundario para no bloquear el hilo de inferencia visual
         threading.Thread(target=self._ejecutar_voz, args=(texto,), daemon=True).start()
 
     def _ejecutar_voz(self, texto):

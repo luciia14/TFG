@@ -14,9 +14,6 @@ class PantallaPrincipal:
         # Contenedor base de toda la ventana
         self.frame = ctk.CTkFrame(root, fg_color="#0D1B2A", corner_radius=0)
 
-        # ==========================================
-        # 1. ENCABEZADO (HEADER)
-        # ==========================================
         self.header_frame = ctk.CTkFrame(self.frame, fg_color="transparent")
         self.header_frame.pack(fill="x", pady=(25, 10), padx=40)
 
@@ -50,9 +47,6 @@ class PantallaPrincipal:
         # Línea divisora superior neón
         ctk.CTkFrame(self.frame, height=2, fg_color="#1E3A5F").pack(fill="x", padx=40, pady=(10, 15))
 
-        # ==========================================
-        # 2. CUERPO CENTRAL (DISEÑO LIMPIO)
-        # ==========================================
         self.body_frame = ctk.CTkFrame(self.frame, fg_color="transparent")
         self.body_frame.pack(expand=True, fill="both", padx=40, pady=5)
 
@@ -120,15 +114,12 @@ class PantallaPrincipal:
 
         ctk.CTkLabel(
             self.tip_card, 
-            text="💡 CONSEJO POSTURAL: Mantén la espalda erguida y realiza descansos cada 45 minutos de trabajo.", 
+            text=" CONSEJO POSTURAL: Mantén la espalda erguida y realiza descansos cada 45 minutos de trabajo.", 
             font=ctk.CTkFont(size=14, weight="bold"), 
             text_color="#80D8FF",
             wraplength=750
         ).pack(pady=14, padx=20)
 
-        # ==========================================
-        # 3. PIE DE PÁGINA (BOTÓN CERRAR SESIÓN ABAJO A LA IZQUIERDA)
-        # ==========================================
         # Línea divisora inferior
         ctk.CTkFrame(self.frame, height=2, fg_color="#1E3A5F").pack(fill="x", padx=40, pady=(10, 0))
 
@@ -150,7 +141,6 @@ class PantallaPrincipal:
         )
         self.btn_logout.pack(side="left")
 
-    # --- Acciones de Interfaz ---
     def actualizar_saludo(self, nombre):
         self.label_saludo.configure(text=f"¡Hola, {nombre}!")
 

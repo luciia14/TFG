@@ -13,9 +13,6 @@ class PantallaLogin:
         self.frame_container = ctk.CTkFrame(root, fg_color="#0D1B2A", corner_radius=20)
         self.frame_container.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.85, relheight=0.9)
 
-        # ==========================================
-        # 1. PANEL DE INICIO DE SESIÓN
-        # ==========================================
         self.frame_login = ctk.CTkFrame(self.frame_container, fg_color="transparent")
         self.frame_login.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.9, relheight=0.8)
         
@@ -49,9 +46,6 @@ class PantallaLogin:
                                      command=self.ir_a_registro)
         btn_registro.pack(pady=5)
 
-        # ==========================================
-        # 2. PANEL DE REGISTRO
-        # ==========================================
         self.frame_registro = ctk.CTkFrame(self.frame_container, fg_color="transparent")
 
         # Título
@@ -97,7 +91,6 @@ class PantallaLogin:
                                    command=self.ir_a_login)
         btn_volver.pack(pady=5)
 
-    # --- Lógica de la máscara de fecha ---
     def format_fecha(self, event):
         if event.keysym == "BackSpace": return
         text = self.entry_reg_fecha.get().replace("/", "")
@@ -108,7 +101,6 @@ class PantallaLogin:
         self.entry_reg_fecha.delete(0, tk.END)
         self.entry_reg_fecha.insert(0, new_text[:10])
 
-    # --- Navegación ---
     def mostrar(self):
         self.frame_registro.place_forget()
         self.frame_login.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.9, relheight=0.8)
@@ -130,7 +122,6 @@ class PantallaLogin:
     def destroy(self):
         self.frame_container.destroy()
 
-    # --- Acciones ---
     def intentar_login(self):
         user = self.entry_user.get().strip()
         passwd = self.entry_pass.get().strip()
